@@ -216,6 +216,67 @@ export class GeminiService {
     });
     return JSON.parse(response.text || "{}");
   }
+
+  /**
+   * Analyzes yearly rainfall data to provide a production outlook for olive farms.
+   * @param monthlyData - Array of objects, each with month name, actual rain, and normal (10-year avg) rain.
+   * @param locationName - The name of the location for context.
+   * @param lang - The language for the response.
+   * @returns A promise that resolves to an object with a title and the analysis text.
+   */
+  async getYearlyRainfallAnalysis(
+    monthlyData: { name: string; rain: number; normal: number }[],
+    locationName: string,
+    lang: string = 'no'
+  ): Promise<{ title: string; analysis: string }> {
+    const ai = this.getAI();
+    const prompt = `
+      CONTEXT:
+      Du er en AI-agronom med doktorgrad i olivendyrking og 30 års erfaring med klimaeffekter på avlinger i middelhavsregionen. Du analyserer nedbørsdata for en olivenfarm i ${locationName}.
+
+      DATA:
+      Følgende data viser månedlig nedbør (i mm) for de siste 12 månedene ("rain") sammenlignet med det historiske 10-årsgjennomsnittet ("normal") for hver måned.
+
+      ${JSON.stringify(monthlyData, null, 2)}
+
+      OPPGAVE:
+      1.  **Analyser dataene:** Sammenlign "rain" mot "normal" for hele året og for kritiske perioder.
+      2.  **Identifiser Kritiske Perioder:** Fokuser på hvordan nedbørsavvik (både underskudd og overskudd) kan ha påvirket:
+          *   **Vår (Mars-Mai):** Avgjørende for blomstring og fruktdannelse. Tørke her er svært negativt.
+          *   **Sommer/Tidlig Høst (Juni-Oktober):** Avgjørende for oljeakkumulering i frukten. Tørkestress kan redusere oljemengden.
+          *   **Vinter (Nov-Feb):** Perioden da treet restituerer.
+      3.  **Formuler en Konklusjon/Trend:** Basert på analysen, gi en konkret prediksjon for neste sesongs avling. Er trenden positiv, negativ eller nøytral? Hva er din faglige begrunnelse?
+      4.  **Vær Konkret:** Bruk tall fra dataene for å underbygge påstandene dine (f.eks. "Et nedbørsunderskudd på X% i mai kan ha...").
+
+      OUTPUT FORMATT:
+      Returner KUN et gyldig JSON-objekt med følgende struktur. Ikke skriv noe før eller etter JSON-objektet.
+
+      {
+        "title": "(string) En kort, slagkraftig tittel for analysen, f.eks. 'Tørr Vår Kan Redusere Avling' eller 'Gode Utsikter Etter Våt Sommer'",
+        "analysis": "(string) En detaljert, men lettforståelig analyse på ${lang}. Start med den overordnede konklusjonen/trenden, og følg opp med begrunnelsen for de ulike periodene."
+      }
+    `;
+
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          temperature: 0.4,
+        }
+      });
+      const text = response.text || '{}';
+      const result = JSON.parse(text) as { title: string; analysis: string };
+      if (!result.title || !result.analysis) {
+        throw new Error("AI response missing title or analysis.");
+      }
+      return result;
+    } catch (error: any) {
+      console.error("Yearly Rainfall Analysis Error:", error);
+      throw new Error("Kunne ikke generere årlig nedbørsanalyse.");
+    }
+  }
 }
 
 export const geminiService = new GeminiService();

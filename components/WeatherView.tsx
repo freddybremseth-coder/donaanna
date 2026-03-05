@@ -4,8 +4,8 @@ import {
   Sun, Wind, Droplets, MapPin, RefreshCcw, Waves, Zap, Loader2,
   Cloud, CloudRain, CloudLightning, Navigation, Thermometer,
   ChevronRight, CalendarDays, Clock, CloudSun, Brain, Locate,
-  Layers, History, TrendingUp, AlertTriangle, Snowflake, TrendingDown,
-  BarChart2
+  Layers, History, TrendingUp, AlertTriangle, Snowflake, BarChart2,
+  LineChart
 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, Tooltip, CartesianGrid,
@@ -13,22 +13,31 @@ import {
 } from 'recharts';
 import { Parcel } from '../types';
 import GlossaryText from './GlossaryText';
+import { geminiService } from '../services/geminiService';
 
 type WeatherTab = 'forecast' | 'history' | 'yearly';
 
-const WeatherView: React.FC = () => {
-  const [weatherData, setWeatherData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+interface WeatherViewProps {
+  initialData: any;
+  initialLocationName: string;
+  initialCoords: { lat: number; lon: number };
+}
+
+const WeatherView: React.FC<WeatherViewProps> = ({ initialData, initialLocationName, initialCoords }) => {
+  const [weatherData, setWeatherData] = useState<any>(initialData);
+  const [loading, setLoading] = useState(!initialData);
   const [historicalData, setHistoricalData] = useState<any[]>([]);
   const [yearlyHistoricalData, setYearlyHistoricalData] = useState<any[]>([]);
   const [climateNormals, setClimateNormals] = useState<any>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [loadingYearlyHistory, setLoadingYearlyHistory] = useState(false);
-  const [locationName, setLocationName] = useState('Biar, Spain');
-  const [coords, setCoords] = useState<{lat: number, lon: number}>({ lat: 38.6294, lon: -0.7667 });
+  const [locationName, setLocationName] = useState(initialLocationName);
+  const [coords, setCoords] = useState(initialCoords);
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [selectedParcelId, setSelectedParcelId] = useState<string>('default');
   const [activeWeatherTab, setActiveWeatherTab] = useState<WeatherTab>('forecast');
+  const [yearlyAnalysis, setYearlyAnalysis] = useState<{ title: string; analysis: string } | null>(null);
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false);
 
   const fetchWeather = async (lat: number, lon: number) => {
     setLoading(true);
@@ -106,11 +115,12 @@ const WeatherView: React.FC = () => {
 
   const fetchYearlyHistoricalWeather = async (lat: number, lon: number) => {
     setLoadingYearlyHistory(true);
+    setYearlyAnalysis(null);
     try {
         const endDate = new Date();
         endDate.setDate(endDate.getDate() - 1); // Yesterday
         const startDate = new Date();
-        startDate.setFullYear(startDate.getFullYear() - 10); // 10 years ago
+        startDate.setFullYear(startDate.getFullYear() - 10);
         const fmt = (d: Date) => d.toISOString().split('T')[0];
 
         const res = await fetch(
@@ -141,11 +151,20 @@ const WeatherView: React.FC = () => {
                 normals[month].push(rain);
             });
 
+            const yearCounts: Record<number, number> = {};
+            data.daily.time.forEach((t: string) => {
+              const date = new Date(t);
+              const year = date.getFullYear();
+              const month = date.getMonth();
+              if (!yearCounts[month]) yearCounts[month] = new Set();
+              (yearCounts[month] as any).add(year);
+            });
+
             const calculatedNormals = Object.keys(normals).map(monthKey => {
                 const monthNum = parseInt(monthKey);
                 const totalRain = (normals[monthNum] || []).reduce((sum, r) => sum + r, 0);
-                const yearCount = Math.max(1, new Set(data.daily.time.map((t: string) => new Date(t).getFullYear())).size - 1); // Avoid dividing by zero
-                return { month: monthNum, normal: totalRain / yearCount };
+                const numYears = (yearCounts[monthNum] as any)?.size || 1;
+                return { month: monthNum, normal: totalRain / Math.max(1, numYears) };
             });
             
             setClimateNormals(calculatedNormals);
@@ -157,6 +176,54 @@ const WeatherView: React.FC = () => {
         setLoadingYearlyHistory(false);
     }
   };
+  
+  const monthlyChartData = useMemo(() => {
+    if (!yearlyHistoricalData || yearlyHistoricalData.length === 0 || !climateNormals) return [];
+
+    const monthly = yearlyHistoricalData.reduce((acc, day) => {
+        const date = new Date(day.dateRaw);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth()).padStart(2, '0')}`;
+        if (!acc[monthKey]) {
+            acc[monthKey] = { 
+              name: date.toLocaleString('no-NO', { month: 'short', year: '2-digit' }), 
+              rain: 0, 
+              date: new Date(date.getFullYear(), date.getMonth(), 1)
+            };
+        }
+        acc[monthKey].rain += day.rain;
+        return acc;
+    }, {} as Record<string, { name: string; rain: number; date: Date }>);
+
+    const sortedMonthly = Object.values(monthly).sort((a, b) => a.date.getTime() - b.date.getTime());
+    
+    return sortedMonthly.map(m => {
+      const monthIndex = m.date.getMonth();
+      const normalData = climateNormals.find((n: any) => n.month === monthIndex);
+      return {
+        ...m,
+        rain: parseFloat(m.rain.toFixed(1)),
+        normal: normalData ? parseFloat(normalData.normal.toFixed(1)) : 0
+      };
+    });
+  }, [yearlyHistoricalData, climateNormals]);
+
+  useEffect(() => {
+    if (monthlyChartData.length > 0 && !loadingYearlyHistory) {
+      const runAnalysis = async () => {
+        setLoadingAnalysis(true);
+        try {
+          const result = await geminiService.getYearlyRainfallAnalysis(monthlyChartData, locationName, 'no');
+          setYearlyAnalysis(result);
+        } catch (error) {
+          console.error("Failed to get yearly analysis:", error);
+          setYearlyAnalysis({ title: "Analyse Feilet", analysis: "Kunne ikke laste inn AI-analyse for nedbør. Sjekk API-nøkkel eller prøv igjen." });
+        } finally {
+          setLoadingAnalysis(false);
+        }
+      };
+      runAnalysis();
+    }
+  }, [monthlyChartData, locationName]);
 
   const reverseGeocode = async (lat: number, lon: number) => {
     try {
@@ -197,11 +264,12 @@ const WeatherView: React.FC = () => {
         setLoading(false);
         alert("Kunne ikke hente posisjon. Bruker standardlokasjon.");
         setSelectedParcelId('default');
-        setCoords({ lat: 38.6294, lon: -0.7667 });
+        const defaultCoords = { lat: 38.6294, lon: -0.7667 };
+        setCoords(defaultCoords);
         setLocationName('Biar, Spain');
-        fetchWeather(38.6294, -0.7667);
-        fetchHistoricalWeather(38.6294, -0.7667);
-        fetchYearlyHistoricalWeather(38.6294, -0.7667);
+        fetchWeather(defaultCoords.lat, defaultCoords.lon);
+        fetchHistoricalWeather(defaultCoords.lat, defaultCoords.lon);
+        fetchYearlyHistoricalWeather(defaultCoords.lat, defaultCoords.lon);
       }
     );
   };
@@ -237,7 +305,7 @@ const WeatherView: React.FC = () => {
     const savedP = localStorage.getItem('olivia_parcels');
     if (savedP) setParcels(JSON.parse(savedP));
 
-    fetchWeather(coords.lat, coords.lon);
+    if (!weatherData) fetchWeather(coords.lat, coords.lon);
     fetchHistoricalWeather(coords.lat, coords.lon);
     fetchYearlyHistoricalWeather(coords.lat, coords.lon);
   }, []);
@@ -254,70 +322,27 @@ const WeatherView: React.FC = () => {
     if (!weather) return "Laster AI analyse...";
   
     const insights = [];
-  
     const todayEvap = weather.daily[0]?.evap;
-    const avgEvap = weather.daily.slice(0, 3).reduce((sum: number, day: any) => sum + day.evap, 0) / 3;
-    if (todayEvap > 4) {
-      insights.push(`høy fordamping (ET0 på ${todayEvap.toFixed(1)}mm)`);
-    } else if (avgEvap > 3.5) {
-      insights.push(`moderat fordamping (ET0) de neste dagene`);
-    }
-  
+    if (todayEvap > 4) insights.push(`høy fordamping (ET0 på ${todayEvap.toFixed(1)}mm)`);
+
     const optimalSprayTime = weather.hourly.find((h: any) => {
       const hour = parseInt(h.time.split(':')[0]);
       return h.wind < 10 && h.rain === 0 && hour > 4 && hour < 11;
     });
     if (optimalSprayTime) {
       insights.push(`optimale sprøyteforhold i morgen tidlig rundt kl. ${optimalSprayTime.time}`);
-    } else {
-        const nextBestTime = weather.hourly.find((h: any) => h.wind < 15 && h.rain === 0);
-        if(nextBestTime) insights.push(`vindfulle forhold, men mulig sprøytevindu rundt kl. ${nextBestTime.time}`);
     }
 
     const hotDays = weather.daily.slice(0, 4).filter((d: any) => d.maxTemp > 30);
-    if (hotDays.length >= 3) {
-        const maxTemp = Math.max(...hotDays.map(d => d.maxTemp));
-        insights.push(`en hetebølge med temperaturer opp mot ${maxTemp.toFixed(0)}°C er på vei, vurder tiltak for å redusere stress`);
-    }
+    if (hotDays.length >= 3) insights.push(`en hetebølge med temperaturer opp mot ${Math.max(...hotDays.map((d:any) => d.maxTemp)).toFixed(0)}°C er på vei`);
 
     const nextRainDay = weather.daily.find((d: any) => d.rainProb > 40);
-    if (nextRainDay) {
-        insights.push(`det er ${nextRainDay.rainProb}% sjanse for ${nextRainDay.rainSum}mm nedbør på ${nextRainDay.date.split(' ')[0]}`);
-    }
+    if (nextRainDay) insights.push(`${nextRainDay.rainProb}% sjanse for ${nextRainDay.rainSum}mm nedbør på ${nextRainDay.date.split(' ')[0]}`);
 
-    if (insights.length === 0) {
-        return `Forholdene ved ${location} ser stabile ut. Ingen spesielle varsler for de kommende dagene.`
-    }
-
-    return `Lokale forhold ved ${location} indikerer ${insights.join(', ')}.`;
+    return insights.length > 0 ? `Lokale forhold ved ${location} indikerer ${insights.join(', ')}.` : `Forholdene ved ${location} ser stabile ut.`;
   }
 
-  const monthlyChartData = useMemo(() => {
-    if (!yearlyHistoricalData || yearlyHistoricalData.length === 0 || !climateNormals) return [];
-
-    const monthly = yearlyHistoricalData.reduce((acc, day) => {
-        const month = new Date(day.dateRaw).toLocaleString('no-NO', { month: 'short', year: '2-digit' });
-        const monthDate = new Date(day.dateRaw.substring(0, 7) + '-01');
-        if (!acc[month]) {
-            acc[month] = { name: month, rain: 0, date: monthDate };
-        }
-        acc[month].rain += day.rain;
-        return acc;
-    }, {} as Record<string, { name: string; rain: number; date: Date }>);
-
-    const sortedMonthly = Object.values(monthly).sort((a, b) => a.date.getTime() - b.date.getTime());
-    
-    return sortedMonthly.map(m => {
-      const monthIndex = m.date.getMonth();
-      const normalData = climateNormals.find((n: any) => n.month === monthIndex);
-      return {
-        ...m,
-        normal: normalData ? normalData.normal : 0
-      };
-    });
-}, [yearlyHistoricalData, climateNormals]);
-
-  if (loading) return (
+  if (loading || !weatherData) return (
     <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
       <Loader2 className="animate-spin text-green-400" size={48} />
       <p className="text-slate-500 italic">Henter sanntids meteorologiske data...</p>
@@ -414,6 +439,24 @@ const WeatherView: React.FC = () => {
                 })()}
               </div>
 
+              {/* AI Yearly Analysis */}
+              <div className="glass rounded-[2rem] p-8 border border-green-500/20 bg-green-500/5">
+                <h3 className="text-sm font-bold text-green-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <LineChart size={16} /> Årlig Analyse & Produksjonstrend
+                </h3>
+                {loadingAnalysis ? (
+                   <div className="space-y-3">
+                      <div className="h-4 w-1/2 bg-white/10 rounded-full animate-pulse"></div>
+                      <div className="h-12 bg-white/5 rounded-lg animate-pulse"></div>
+                   </div>
+                ) : yearlyAnalysis ? (
+                  <div>
+                    <h4 className="font-bold text-lg text-white mb-2">{yearlyAnalysis.title}</h4>
+                    <p className="text-xs text-slate-300 italic leading-relaxed">"<GlossaryText text={yearlyAnalysis.analysis} />"</p>
+                  </div>
+                ) : null}
+              </div>
+
               <div className="glass rounded-[2.5rem] p-8 border border-white/10">
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
                   <CloudRain size={14} className="text-blue-400" /> Nedbør: Siste 12 mnd vs. Klimanormal
@@ -448,7 +491,6 @@ const WeatherView: React.FC = () => {
             </div>
           ) : historicalData.length > 0 ? (
             <>
-              {/* 90-day Rain Summary Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {(() => {
                   const totalRain = historicalData.reduce((s, d) => s + (d.rain || 0), 0);
