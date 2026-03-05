@@ -119,14 +119,12 @@ export interface Task {
   dueDate?: string; 
 }
 
-// Added Ingredient interface
 export interface Ingredient {
   name: string;
   amount: string;
   unit: string;
 }
 
-// Added Recipe interface
 export interface Recipe {
   id: string;
   name: string;
@@ -143,7 +141,6 @@ export interface Recipe {
   isQualityAssured: boolean;
 }
 
-// Updated PruningHistoryItem to support PruningAdvisorView fields
 export interface PruningHistoryItem {
   id: string;
   date: string;
@@ -154,4 +151,63 @@ export interface PruningHistoryItem {
   plan?: PruningPlan;
   scheduledTime?: string;
   parcelId?: string;
+}
+
+// --- NEW TYPES FOR PROFITABILITY DASHBOARD ---
+
+export type CostCategory = 
+  | 'GJØDSEL' 
+  | 'PLANTEVERN' 
+  | 'VANN' 
+  | 'STRØM'
+  | 'ARBEIDSKRAFT' 
+  | 'VEDLIKEHOLD' 
+  | 'INNHØSTING' 
+  | 'EMBALLASJE' 
+  | 'TRANSPORT' 
+  | 'MARKEDSFORING' 
+  | 'ADMINISTRASJON'
+  | 'FASTE' // (f.eks. eiendomsskatt, lån, forsikring)
+  | 'ANNET';
+
+export type RevenueCategory = 
+  | 'OLIVENOLJE' 
+  | 'SPISEOLIVEN' 
+  | 'BALSAMICO'
+  | 'TURISME'
+  | 'STOTTEORDNINGER' 
+  | 'ANNET';
+
+export interface CostItem {
+  id: string;
+  date: string; // YYYY-MM-DD
+  category: CostCategory;
+  amount: number; // Negative value
+  description: string;
+  parcelId?: string; // Optional: link cost to a specific parcel
+  equipmentId?: string; // Optional: link cost to specific equipment
+}
+
+export interface RevenueItem {
+  id: string;
+  date: string; // YYYY-MM-DD
+  category: RevenueCategory;
+  amount: number; // Positive value
+  description: string;
+  product: string; // e.g., "Dona Anna EVOO 500ml", "Balsamico Bianco"
+  unitsSold: number;
+  pricePerUnit: number;
+  batchId?: string; // Optional: link revenue to a production batch
+}
+
+export interface ProfitabilitySnapshot {
+  id: string; // e.g., "total_2024", "parcel_p1_2024", "product_evoo_2024"
+  type: 'Total' | 'Parcel' | 'Product';
+  label: string; // e.g., "Total Farm 2024", "Parcel: Los Almendros 2024", "Product: EVOO 500ml 2024"
+  timeframe: string; // e.g., "2024", "Q3 2024"
+  totalRevenue: number;
+  totalCosts: number;
+  netProfit: number;
+  revenueBreakdown: Partial<Record<RevenueCategory, number>>;
+  costBreakdown: Partial<Record<CostCategory, number>>;
 }
