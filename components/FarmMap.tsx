@@ -199,8 +199,20 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
     setEditTreeCount(details.treeCount || 0);
     setEditVariety('Picual');
 
-    if (mapRef.current) {
-      mapRef.current.flyTo([details.latitude, details.longitude], 18);
+    // Fly to polygon center if lat/lon are present; otherwise derive from polygon
+    let flyLat = details.latitude;
+    let flyLon = details.longitude;
+    if ((!flyLat || !flyLon) && finalPolygon && finalPolygon.length > 2) {
+      try {
+        const c = turf.centerOfMass(turf.polygon([finalPolygon.map(p => [p[1], p[0]])]));
+        flyLat = c.geometry.coordinates[1];
+        flyLon = c.geometry.coordinates[0];
+        details.latitude = flyLat;
+        details.longitude = flyLon;
+      } catch {}
+    }
+    if (mapRef.current && flyLat && flyLon) {
+      mapRef.current.flyTo([flyLat, flyLon], 18);
     }
 
     if (finalPolygon) {
