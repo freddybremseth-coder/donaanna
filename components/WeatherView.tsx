@@ -23,94 +23,304 @@ interface WeatherViewProps {
   initialLocationName: string;
   initialCoords: { lat: number; lon: number };
   language: Language;
+  parcels: Parcel[];
+  onParcelSelect: (parcel: Parcel) => void;
+  selectedParcel: Parcel | null;
 }
 
-const WeatherView: React.FC<WeatherViewProps> = ({ initialData, initialLocationName, initialCoords, language }) => {
+const WeatherView: React.FC<WeatherViewProps> = ({
+  initialData,
+  initialLocationName,
+  initialCoords,
+  language,
+  parcels,
+  onParcelSelect,
+  selectedParcel
+}) => {
   const { t } = useTranslation(language);
-  // ... (all other state variables remain the same)
+  const [weatherData, setWeatherData] = useState(initialData);
+  const [locationName, setLocationName] = useState(initialLocationName);
+  const [coords, setCoords] = useState(initialCoords);
+  const [activeTab, setActiveTab] = useState<WeatherTab>('forecast');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isAiCardExpanded, setIsAiCardExpanded] = useState(true);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState({ title: '', analysis: '' });
+
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
   const [fullAnalysisText, setFullAnalysisText] = useState('');
 
+  useEffect(() => {
+    handleRefresh();
+  }, [selectedParcel]);
 
-  // ... (all other functions and useEffect hooks remain the same)
-
-  const generateAIAnalysis = (weather: any, location: string): string => {
-    // This is a simplified version. The real implementation would be more complex.
-    // In a real scenario, this would call the Gemini API
-    const summary = `Lokale forhold ved ${location} indikerer optimale sprøyteforhold i morgen tidlig rundt kl. 05:00, 83% sjanse for 11.6mm nedbør på fre...`;
-    return summary;
+  const handleRefresh = async () => {
+    if (!selectedParcel) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/weather?lat=${selectedParcel.lat}&lon=${selectedParcel.lon}`);
+      if (!response.ok) throw new Error(t('error_fetching_weather'));
+      const data = await response.json();
+      setWeatherData(data);
+      setLocationName(selectedParcel.name);
+      setCoords({ lat: selectedParcel.lat, lon: selectedParcel.lon });
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSeeFullReport = async () => {
+  const handleGenerateAnalysis = async () => {
+    if (!weatherData?.yearly) return;
+    setIsGeneratingReport(true);
+    setError(null);
+    try {
+      const result = await geminiService.generateMicroclimateAnalysis(weatherData.yearly.rain, language);
+      setAiAnalysis(result);
+    } catch (err: any) {
+      setError('Failed to generate AI analysis.');
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+    
+ const handleSeeFullReport = () => {
     if (fullAnalysisText) {
       setIsAnalysisModalOpen(true);
       return;
     }
-    setLoading(true);
-    try {
-      // This would be a more detailed call to the AI service
-      const detailedReport = await geminiService.getDetailedWeatherAnalysis(weatherData, locationName, language);
+
+    setIsGeneratingReport(true);
+    // Simulate fetching a more detailed report from the AI
+    setTimeout(() => {
+      const detailedReport = aiAnalysis.analysis + " " + t('mock_detailed_analysis_text');
       setFullAnalysisText(detailedReport);
+      setIsGeneratingReport(false);
       setIsAnalysisModalOpen(true);
-    } catch (error) {
-      console.error("Failed to get detailed analysis:", error);
-      setFullAnalysisText(t('analysis_failed'));
-    } finally {
-      setLoading(false);
+    }, 1500);
+  };
+
+
+  const yearlyChartData = useMemo(() => {
+    if (!weatherData?.yearly?.rain) return [];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return weatherData.yearly.rain.normal.map((normal: number, index: number) => ({
+      month: monthNames[index],
+      [t('normal_precipitation')]: normal,
+      [t('actual_precipitation')]: weatherData.yearly.rain.rain[index]
+    }));
+  }, [weatherData, t]);
+
+  const forecastHourlyData = useMemo(() => {
+    if (!weatherData?.hourly) return [];
+    return weatherData.hourly.time.slice(0, 24).map((t: string, i: number) => ({
+      time: new Date(t).getHours() + ':00',
+      temperature: weatherData.hourly.temperature_2m[i],
+      precipitation: weatherData.hourly.precipitation_probability[i],
+    }));
+  }, [weatherData]);
+
+  const getDayOfWeek = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString(language, { weekday: 'short' });
+  };
+
+  const getWeatherIcon = (code: number, isDay: number) => {
+    switch (code) {
+      case 0: return isDay ? <Sun size={32} /> : <CloudSun size={32} />;
+      case 1: case 2: case 3: return <Cloud size={32} />;
+      case 45: case 48: return <Cloud size={32} />;
+      case 51: case 53: case 55: return <Droplets size={32} />;
+      case 61: case 63: case 65: return <CloudRain size={32} />;
+      case 80: case 81: case 82: return <CloudRain size={32} />;
+      case 71: case 73: case 75: case 85: case 86: return <Snowflake size={32} />;
+      case 95: case 96: case 99: return <CloudLightning size={32} />;
+      default: return <Sun size={32} />;
     }
   };
 
-  if (loading || !weatherData) return (
-    <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
-      <Loader2 className="animate-spin text-green-400" size={48} />
-      <p className="text-slate-500 italic">{t('fetching_real_time_data')}</p>
-    </div>
-  );
-
-  const aiAnalysisText = generateAIAnalysis(weatherData, locationName);
-
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 pb-20">
-      {/* ... (rest of the JSX remains the same up to the AI analysis card) */}
-      
-      <div className="lg:col-span-4 space-y-6">
-        {/* ... (other cards in this column) */}
-        <div className="glass rounded-[2rem] p-6 border border-white/10">
-          <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-            <Brain size={16} /> {t('ai_microclimate_analysis')}
-          </h3>
-          <p className="text-sm text-slate-300 mb-5 leading-relaxed font-medium italic">"<GlossaryText text={aiAnalysisText} />"</p>
-          <button 
-            onClick={handleSeeFullReport}
-            className="w-full text-center text-xs font-bold py-2.5 rounded-xl bg-white/5 hover:bg-green-500/10 hover:text-green-400 text-slate-400 border border-white/5 hover:border-green-500/20 transition-all flex items-center justify-center gap-1"
+    <div className="glass rounded-[2.5rem] p-6 md:p-8 border border-white/10 text-white min-h-[500px] flex flex-col">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div className='w-full'>
+          <div className="flex items-center gap-4">
+            <div className="relative">
+                <select 
+                    value={selectedParcel?.id || ''}
+                    onChange={(e) => {
+                        const parcel = parcels.find(p => p.id === e.target.value);
+                        if (parcel) onParcelSelect(parcel);
+                    }}
+                    className="bg-transparent text-xl font-bold focus:outline-none appearance-none cursor-pointer pr-8"
+                >
+                    {parcels.map(p => <option key={p.id} value={p.id} className="bg-slate-800">{p.name}</option>)}
+                </select>
+                <ChevronRight className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" size={20} />
+            </div>
+          </div>
+          <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
+            <MapPin size={12} /> {coords.lat.toFixed(3)}, {coords.lon.toFixed(3)}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 mt-4 md:mt-0">
+          <button
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {t('see_full_report')} <ChevronRight size={14} />
+            {isLoading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCcw size={16} />}
           </button>
         </div>
       </div>
 
-      {/* Analysis Modal */}
-      {isAnalysisModalOpen && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="glass w-full max-w-2xl rounded-[2.5rem] p-8 border border-white/20 shadow-2xl space-y-6 animate-in fade-in-90 zoom-in-95">
-            <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold text-white flex items-center gap-3"><Brain size={22} className="text-purple-400"/> AI Mikroklima-analyse</h3>
-                <button onClick={() => setIsAnalysisModalOpen(false)} className="p-2 text-slate-500 hover:text-white transition-colors rounded-full">
-                    <X size={24} />
+      {error && <div className="bg-red-500/20 text-red-300 p-4 rounded-lg mb-6 text-sm">{error}</div>}
+
+      {/* Tabs */}
+      <div className="flex border-b border-white/10 mb-6">
+        {(['forecast', 'history', 'yearly'] as WeatherTab[]).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === tab ? 'text-green-400 border-b-2 border-green-400' : 'text-slate-400 hover:text-white'}`}
+          >
+            {t(tab)}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="flex-grow">
+        {activeTab === 'forecast' && weatherData?.daily && (
+          <div className="space-y-4 animate-in fade-in duration-500">
+            {weatherData.daily.time.map((day: string, index: number) => (
+              <div key={day} className={`flex items-center justify-between p-3 rounded-xl ${index === 0 ? 'bg-white/5' : ''}`}>
+                <span className="font-bold w-1/5">{index === 0 ? t('today') : getDayOfWeek(day)}</span>
+                <div className="flex items-center gap-2 w-1/5 justify-center">
+                  {getWeatherIcon(weatherData.daily.weather_code[index], weatherData.daily.sunrise[index] < new Date().toISOString() && weatherData.daily.sunset[index] > new Date().toISOString() ? 1: 0)}
+                </div>
+                <div className="flex items-center gap-1 w-1/5">
+                  <Thermometer size={14} className="text-slate-400" />
+                  <span className="text-sm">{weatherData.daily.temperature_2m_min[index].toFixed(0)}° / {weatherData.daily.temperature_2m_max[index].toFixed(0)}°</span>
+                </div>
+                <div className="flex items-center gap-1 w-1/5">
+                  <Droplets size={14} className="text-slate-400" />
+                  <span className="text-sm">{weatherData.daily.precipitation_sum[index].toFixed(1)} mm</span>
+                </div>
+                <div className="flex items-center gap-1 w-1/5">
+                  <Wind size={14} className="text-slate-400" />
+                  <span className="text-sm">{weatherData.daily.wind_speed_10m_max[index].toFixed(1)} km/h</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === 'history' && (
+           <div className="animate-in fade-in duration-500 text-center pt-10">
+                <History size={40} className="mx-auto text-slate-500" />
+                <h4 className="font-bold text-lg mt-4">{t('historical_data')}</h4>
+                <p className="text-sm text-slate-400">{t('coming_soon')}</p>
+            </div>
+        )}
+
+        {activeTab === 'yearly' && (
+          <div className="animate-in fade-in duration-500">
+            <div className='flex justify-end'>
+                 <button onClick={() => setIsAiCardExpanded(!isAiCardExpanded)} className="text-xs p-2 -mb-4 -mt-4 text-slate-400 hover:text-white">
+                    {isAiCardExpanded ? t('collapse') : t('expand')}
                 </button>
             </div>
-            <div className="prose prose-invert prose-sm max-h-[60vh] overflow-y-auto pr-2">
-              {loading ? (
-                <div className="flex items-center justify-center py-10">
-                  <Loader2 className="animate-spin text-green-400" size={32} />
+            { isAiCardExpanded &&
+            <div className="glass p-4 rounded-xl border border-white/10 mb-6 animate-in fade-in duration-300">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h4 className="font-bold text-md flex items-center gap-2">
+                        <Brain size={16} className="text-purple-400" />
+                        {t('ai_microclimate_analysis')}
+                        </h4>
+                        <p className="text-xs text-slate-400">{t('based_on_yearly_precipitation')}</p>
+                    </div>
+                     <button
+                        onClick={handleGenerateAnalysis}
+                        disabled={isGeneratingReport}
+                        className="text-xs bg-purple-500/20 hover:bg-purple-500/40 text-purple-300 px-3 py-1 rounded-md transition-all flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                        {isGeneratingReport ? <Loader2 size={14} className="animate-spin"/> : <RefreshCcw size={14} />}
+                        {t('regenerate')}
+                    </button>
                 </div>
-              ) : (
-                <p>{fullAnalysisText}</p>
-              )}
+              
+                {aiAnalysis.title ? (
+                  <div className="mt-4">
+                    <p className="font-bold text-green-400 text-sm">{aiAnalysis.title}</p>
+                    <p className="text-xs mt-1 text-slate-300 leading-relaxed">
+                        {aiAnalysis.analysis.substring(0, 150)}...
+                    </p>
+                    <button onClick={handleSeeFullReport} className="text-xs font-bold text-green-400 hover:underline mt-2 flex items-center gap-1 disabled:opacity-50" disabled={isGeneratingReport}>
+                         {isGeneratingReport && !fullAnalysisText ? <Loader2 size={14} className="animate-spin" /> : <ChevronRight size={14} />}
+                        {t('see_full_report')}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-4 text-center">
+                    <p className="text-sm text-slate-400">{t('press_generate_for_analysis')}</p>
+                  </div>
+                )}
+            </div>
+            }
+
+            <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <BarChart2 size={16} /> {t('precipitation_comparison')} (mm)
+            </h4>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={yearlyChartData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `${val} mm`} />
+                  <Tooltip
+                    contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.75rem', fontSize: '12px' }}
+                    labelStyle={{ fontWeight: 'bold' }}
+                    formatter={(value: number, name: string) => [`${value} mm`, name]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold' }} />
+                  <Bar dataKey={t('normal_precipitation')} fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey={t('actual_precipitation')} fill="#22c55e" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+      </div>
+      
+    {/* Full Analysis Modal */}
+      {isAnalysisModalOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-300">
+          <div className="glass rounded-2xl border border-white/10 p-6 w-full max-w-2xl m-4 relative">
+            <button 
+              onClick={() => setIsAnalysisModalOpen(false)} 
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <h3 className="text-lg font-bold flex items-center gap-2 text-purple-400">
+              <Brain size={20} />
+              {t('full_ai_analysis')}
+            </h3>
+            <div className="mt-4 text-slate-300 text-sm leading-relaxed max-h-[70vh] overflow-y-auto pr-4">
+              <p className='font-bold text-base text-green-400 mb-2'>{aiAnalysis.title}</p>
+              {fullAnalysisText.split('\n').map((paragraph, index) => (
+                  <p key={index} className="mb-4">{paragraph}</p>
+              ))}
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 };
