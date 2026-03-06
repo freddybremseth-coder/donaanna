@@ -44,7 +44,7 @@ const catastroFetch = async (url: string): Promise<string> => {
 
 export class SedecService {
   private static WFS_URL =
-    "https://ovc.catastro.minhafp.es/ovcservweb/ovcwfs/ServidorWFS.aspx";
+    "https://ovc.catastro.meh.es/ovcservweb/ovcwfs/ServidorWFS.aspx";
   private static ALPHA_CODES_URL =
     `${CATASTRO_HOST}/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroCodigos.asmx/Consulta_DNPPP_Codigos`;
 
