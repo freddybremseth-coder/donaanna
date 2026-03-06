@@ -1,6 +1,14 @@
 
 import { PruningPlan, PlantDiagnosis } from './services/geminiService';
 
+export type Language = 'en' | 'no' | 'es';
+
+export interface FarmInsight {
+    id: string;
+    tittel: string;
+    beskrivelse: string;
+}
+
 export enum EquipmentStatus {
   ACTIVE = 'ACTIVE',
   SERVICE = 'SERVICE',

@@ -74,19 +74,27 @@ const WeatherView: React.FC<WeatherViewProps> = ({
   };
 
   const handleGenerateAnalysis = async () => {
-    if (!weatherData?.yearly) return;
+    if (!weatherData?.yearly?.rain) return;
     setIsGeneratingReport(true);
     setError(null);
     try {
-      const result = await geminiService.generateMicroclimateAnalysis(weatherData.yearly.rain, language);
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthlyData = weatherData.yearly.rain.normal.map((normal: number, index: number) => ({
+        name: monthNames[index],
+        rain: weatherData.yearly.rain.rain[index],
+        normal: normal
+      }));
+
+      const result = await geminiService.getYearlyRainfallAnalysis(monthlyData, locationName, language);
       setAiAnalysis(result);
     } catch (err: any) {
+      console.error("AI Analysis Error in WeatherView:", err);
       setError('Failed to generate AI analysis.');
     } finally {
       setIsGeneratingReport(false);
     }
   };
-    
+
  const handleSeeFullReport = () => {
     if (fullAnalysisText) {
       setIsAnalysisModalOpen(true);

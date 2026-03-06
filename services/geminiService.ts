@@ -1,5 +1,5 @@
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, GenerationConfig, Schema, Part, EnhancedGenerateContentResponse, Content } from "@google/generative-ai";
 import { Sensor, Recipe, Language, FarmInsight } from "../types";
 
 //<editor-fold desc="Interfaces">
@@ -112,7 +112,7 @@ export class GeminiService {
     const prompt = `Weather Data: ${JSON.stringify(weatherData.daily)}`;
 
     try {
-        const result = await model.generateContent({
+        const result: EnhancedGenerateContentResponse = await model.generateContent({
             contents: [{ role: "user", parts: [{ text: prompt }] }],
             generationConfig: {
                 responseMimeType: "application/json",
@@ -164,7 +164,7 @@ export class GeminiService {
     });
 
     try {
-        const result = await model.generateContent({
+        const result: EnhancedGenerateContentResponse = await model.generateContent({
             contents: [{ role: "user", parts: [{ text: `Forespørsel: "${searchQueryOrCoords}"` }] }],
             generationConfig: {
                 responseMimeType: "application/json",
@@ -215,7 +215,7 @@ export class GeminiService {
     const ai = this.getAI();
     const model = ai.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
-    const result = await model.generateContent({
+    const result: EnhancedGenerateContentResponse = await model.generateContent({
         contents: [{ role: 'user', parts: [{text: `Adjust this olive recipe: ${JSON.stringify(currentRecipe)} based on: "${prompt}". Respond in JSON.`}]}],
         generationConfig: {
             responseMimeType: "application/json",
@@ -251,7 +251,7 @@ export class GeminiService {
         Output ONLY the JSON object matching the schema.`,
     });
 
-    const imageParts = imagesBase64.map(data => ({
+    const imageParts: Part[] = imagesBase64.map(data => ({
         inlineData: {
             mimeType: 'image/jpeg',
             data
@@ -261,7 +261,7 @@ export class GeminiService {
     const textPrompt = `Analyze the provided image(s) of an olive tree and provide a comprehensive report in ${lang}.`;
 
     try {
-        const result = await model.generateContent({
+        const result: EnhancedGenerateContentResponse = await model.generateContent({
             contents: [{ role: 'user', parts: [...imageParts, { text: textPrompt }] }],
             generationConfig: {
                 responseMimeType: "application/json",
@@ -341,7 +341,7 @@ export class GeminiService {
     `;
     
     try {
-        const result = await model.generateContent({
+        const result: EnhancedGenerateContentResponse = await model.generateContent({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             generationConfig: {
                 responseMimeType: "application/json",
@@ -395,7 +395,7 @@ export class GeminiService {
     `;
 
     try {
-      const result = await model.generateContent({
+      const result: EnhancedGenerateContentResponse = await model.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
           responseMimeType: "application/json",
