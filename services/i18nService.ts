@@ -1,4 +1,4 @@
-
+"""
 export type Language = 'en' | 'no' | 'es' | 'it' | 'fr' | 'de' | 'sv' | 'ru';
 
 const translations: Record<string, Record<Language, string>> = {
@@ -92,7 +92,7 @@ const translations: Record<string, Record<Language, string>> = {
   status: { en: 'Status', no: 'Status', es: 'Estado', it: 'Stato', fr: 'Statut', de: 'Status', sv: 'Status', ru: 'Статус' },
   measurement_unit: { en: 'Measurement Unit', no: 'Måleenhet', es: 'Unidad de Medida', it: 'Unità di Misura', fr: 'Unité de Mesure', de: 'Maßeinheit', sv: 'Måttenhet', ru: 'Единица измерения' },
   operating_value: { en: 'Operating Value', no: 'Driftsverdi', es: 'Valor Operativo', it: 'Valore Operativo', fr: 'Valeur d'Exploitation', de: 'Betriebswert', sv: 'Driftvärde', ru: 'Рабочее значение' },
-  register_new_equipment: { en: 'Register New Equipment', no: 'Registrer Nytt Utstyr', es: 'Registrar Nuevo Equipo', it: 'Registra Nuova Attrezzatura', fr: 'Enregistrer un Nouvel Équipement', de: 'Neue Ausrüstung registrieren', sv: 'Registrera Ny Utrustning', ru: 'Зарегистрировать новое оборудование' },
+  register_new_equipment: { en: 'Register New Equipment', no: 'Registrer Nytt Utstyr', es: 'Registrar Nuevo Equipo', it: 'Registra Nuova Attrezzatura', fr: 'Enregistrer un Nouvel ÉquIPement', de: 'Neue Ausrüstung registrieren', sv: 'Registrera Ny Utrustning', ru: 'Зарегистрировать новое оборудование' },
   model_name: { en: 'Model/Name', no: 'Modell/Navn', es: 'Modelo/Nombre', it: 'Modello/Nome', fr: 'Modèle/Nom', de: 'Modell/Name', sv: 'Modell/Namn', ru: 'Модель/Название' },
   start_value: { en: 'Start Value', no: 'Startverdi', es: 'Valor Inicial', it: 'Valore Iniziale', fr: 'Valeur Initiale', de: 'Startwert', sv: 'Startvärde', ru: 'Начальное значение' },
   register_in_fleet: { en: 'Register in Fleet', no: 'Registrer i flåten', es: 'Registrar en la Flota', it: 'Registra nella Flotta', fr: 'Enregistrer dans la Flotte', de: 'Im Fuhrpark registrieren', sv: 'Registrera i maskinparken', ru: 'Зарегистрировать в автопарке' },
@@ -175,4 +175,4 @@ export const useTranslation = (language: Language) => {
   const t = useMemo(() => (key: string) => getTranslation(key, language), [language]);
   return { t, currentLanguage: language };
 };
-
+""
