@@ -19,8 +19,13 @@ const catastroFetch = async (url: string): Promise<string> => {
   try {
     const r = await fetch(url);
     const text = await r.text();
-    if (text.trim().startsWith("<")) return text;
-  } catch (_) { /* CORS blokkert */ }
+    console.log("[Catastro direkte]", r.status, JSON.stringify(text.slice(0, 400)));
+    // fjern BOM (\uFEFF) før sjekk
+    if (text.replace(/^\uFEFF/, '').trim().startsWith("<")) return text;
+    errors.push(`direkte HTTP ${r.status}: ikke XML (${text.slice(0, 80)})`);
+  } catch (e: any) {
+    errors.push(`direkte: ${e.message}`);
+  }
 
   // 3) allorigins.win/get – JSON-wrapper (mer pålitelig enn /raw)
   try {
