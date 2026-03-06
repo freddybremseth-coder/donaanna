@@ -1,14 +1,8 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { Sensor, Recipe, Language } from "../types";
+import { Sensor, Recipe, Language, FarmInsight } from "../types";
 
 //<editor-fold desc="Interfaces">
-export interface FarmInsight {
-  id: string;
-  tittel: string;
-  beskrivelse: string;
-}
-
 export interface PruningStep {
   area: string;
   action: string;
@@ -83,16 +77,10 @@ export class GeminiService {
   private cache = new Map<string, CadastralDetails>();
 
   private getGeminiKey(): string {
-    // First, try to get the key set specifically in the app's local storage
     const oliviaKey = localStorage.getItem('olivia_gemini_api_key');
     if (oliviaKey) return oliviaKey;
-  
-    // Fallback to environment variable (useful for development/server-side)
-    // Note: Vite uses import.meta.env for client-side variables
     const envKey = import.meta.env.VITE_GEMINI_API_KEY;
     if(envKey) return envKey;
-
-    // If still no key, return empty, triggering an error downstream.
     return '';
   }
 
@@ -102,6 +90,57 @@ export class GeminiService {
       throw new Error('API key for Gemini is not configured. Please set it in the application settings.');
     }
     return new GoogleGenerativeAI(apiKey);
+  }
+
+  async getFarmInsights(weatherData: any, lang: Language = 'no'): Promise<FarmInsight[]> {
+    if (!weatherData) return [];
+    const ai = this.getAI();
+    const model = ai.getGenerativeModel({ 
+        model: "gemini-1.5-flash-latest",
+        systemInstruction: `You are an expert agronomist AI for an olive farm. Your task is to generate 2-3 brief, actionable insights based on the provided weather forecast data. Focus on what a farm manager needs to know *today*.
+        
+        RULES:
+        1.  Analyze the daily forecast for the next 7 days.
+        2.  Identify potential risks or opportunities (e.g., high winds, frost risk, ideal spray conditions, heat stress, heavy rain).
+        3.  Generate a short, snappy title and a 1-2 sentence description for each insight.
+        4.  The ID should be a unique slug based on the title (e.g., 'high_wind_warning').
+        5.  Respond in the user's language: ${lang}.
+        6.  Return ONLY the JSON array. Do not include any other text or markdown.
+        `,
+    });
+
+    const prompt = `Weather Data: ${JSON.stringify(weatherData.daily)}`;
+
+    try {
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: 'ARRAY',
+                    items: {
+                        type: 'OBJECT',
+                        properties: {
+                            id: { type: 'STRING' },
+                            tittel: { type: 'STRING' },
+                            beskrivelse: { type: 'STRING' },
+                        },
+                        required: ['id', 'tittel', 'beskrivelse']
+                    }
+                },
+            },
+        });
+        const text = result.response.text();
+        return JSON.parse(text) as FarmInsight[];
+    } catch (error) {
+        console.error("Farm Insights Error:", error);
+        // Return a default message on error to avoid crashing the dashboard
+        return [{
+            id: 'insight_error',
+            tittel: 'Innsiktsfeil',
+            beskrivelse: 'Kunne ikke hente AI-genererte innsikter. Sjekk API-nøkkel eller prøv igjen senere.'
+        }];
+    }
   }
 
   async analyzeParcelCadastre(searchQueryOrCoords: string, lang: Language = 'no'): Promise<CadastralDetails> {
