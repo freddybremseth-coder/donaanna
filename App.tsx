@@ -5,7 +5,6 @@ import Dashboard from './components/Dashboard';
 import FarmMap from './components/FarmMap';
 import WeatherView from './components/WeatherView';
 import ProductionView from './components/ProductionView';
-import EconomyView from './components/EconomyView';
 import FleetView from './components/FleetView';
 import IrrigationView from './components/IrrigationView';
 import TasksView from './components/TasksView';
@@ -16,6 +15,7 @@ import LandingPage from './components/LandingPage';
 import AdminDashboard from './components/AdminDashboard';
 import IoTDashboard from './components/IoTDashboard';
 import LoginModal, { StoredUser } from './components/LoginModal';
+import ProfitabilityPage from './pages/Profitability'; // <-- NEW
 import { UserProfile } from './types';
 import { Language } from './services/i18nService';
 
@@ -162,7 +162,7 @@ const App: React.FC = () => {
       case 'map': return <FarmMap language={language} />;
       case 'weather': return <WeatherView initialData={weatherData} initialLocationName={locationName} initialCoords={coords} />;
       case 'production': return <ProductionView />;
-      case 'economy': return <EconomyView />;
+      case 'economy': return <ProfitabilityPage />; // <-- UPDATED
       case 'fleet': return <FleetView />;
       case 'irrigation': return <IrrigationView />;
       case 'tasks': return <TasksView />;
