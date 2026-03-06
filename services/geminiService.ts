@@ -1,8 +1,13 @@
 
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, GenerationConfig, Schema, Part, EnhancedGenerateContentResponse, Content } from "@google/generative-ai";
-import { Sensor, Recipe, Language, FarmInsight } from "../types";
+import { GoogleGenAI, Type } from "@google/genai";
+import { Sensor, Recipe, Ingredient } from "../types";
 
-//<editor-fold desc="Interfaces">
+export interface FarmInsight {
+  id: string;
+  tittel: string;
+  beskrivelse: string;
+}
+
 export interface PruningStep {
   area: string;
   action: string;
@@ -56,370 +61,433 @@ export interface IrrigationAdvice {
 
 export interface CadastralDetails {
   cadastralId: string;
-  municipalityCode?: string;
-  provinceCode?: string;
+  municipalityCode: string;
+  provinceCode: string;
   areaSqm: number;
-  treeCount?: number;
-  neighbors?: string[];
+  treeCount: number;
+  neighbors: string[];
   landUse: string;
-  soilQuality?: string;
+  soilQuality: string;
   municipality: string;
   latitude: number;
   longitude: number;
-  description?: string;
+  description: string;
 }
-//</editor-fold>
 
-/**
- * Service class to interact with Google's Gemini AI for various agricultural analyses.
- */
 export class GeminiService {
   private cache = new Map<string, CadastralDetails>();
 
+  private getClaudeKey(): string | null {
+    return localStorage.getItem('olivia_claude_api_key') || null;
+  }
+
   private getGeminiKey(): string {
-    const oliviaKey = localStorage.getItem('olivia_gemini_api_key');
-    if (oliviaKey) return oliviaKey;
-    const envKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if(envKey) return envKey;
-    return '';
+    return localStorage.getItem('olivia_gemini_api_key') || process.env.API_KEY || '';
   }
 
   private getAI() {
-    const apiKey = this.getGeminiKey();
-    if (!apiKey) {
-      throw new Error('API key for Gemini is not configured. Please set it in the application settings.');
-    }
-    return new GoogleGenerativeAI(apiKey);
+    return new GoogleGenAI({ apiKey: this.getGeminiKey() });
   }
 
-  async getFarmInsights(weatherData: any, lang: Language = 'no'): Promise<FarmInsight[]> {
-    if (!weatherData) return [];
-    const ai = this.getAI();
-    const model = ai.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        systemInstruction: `You are an expert agronomist AI for an olive farm. Your task is to generate 2-3 brief, actionable insights based on the provided weather forecast data. Focus on what a farm manager needs to know *today*.
-        
-        RULES:
-        1.  Analyze the daily forecast for the next 7 days.
-        2.  Identify potential risks or opportunities (e.g., high winds, frost risk, ideal spray conditions, heat stress, heavy rain).
-        3.  Generate a short, snappy title and a 1-2 sentence description for each insight.
-        4.  The ID should be a unique slug based on the title (e.g., 'high_wind_warning').
-        5.  Respond in the user's language: ${lang}.
-        6.  Return ONLY the JSON array. Do not include any other text or markdown.
-        `,
+  async callClaude(prompt: string, model: string = 'claude-sonnet-4-6'): Promise<string> {
+    const key = this.getClaudeKey();
+    if (!key) throw new Error('Ingen Claude API-nøkkel konfigurert');
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: prompt }]
+      })
     });
-
-    const prompt = `Weather Data: ${JSON.stringify(weatherData.daily)}`;
-
-    try {
-        const result: EnhancedGenerateContentResponse = await model.generateContent({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: 'ARRAY',
-                    items: {
-                        type: 'OBJECT',
-                        properties: {
-                            id: { type: 'STRING' },
-                            tittel: { type: 'STRING' },
-                            beskrivelse: { type: 'STRING' },
-                        },
-                        required: ['id', 'tittel', 'beskrivelse']
-                    }
-                },
-            },
-        });
-        const text = result.response.text();
-        return JSON.parse(text) as FarmInsight[];
-    } catch (error) {
-        console.error("Farm Insights Error:", error);
-        // Return a default message on error to avoid crashing the dashboard
-        return [{
-            id: 'insight_error',
-            tittel: 'Innsiktsfeil',
-            beskrivelse: 'Kunne ikke hente AI-genererte innsikter. Sjekk API-nøkkel eller prøv igjen senere.'
-        }];
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as { error?: { message?: string } }).error?.message || `Claude API feil: ${response.status}`);
     }
+    const data = await response.json() as { content: Array<{ type: string; text: string }> };
+    return data.content[0]?.text || '';
   }
 
-  async analyzeParcelCadastre(searchQueryOrCoords: string, lang: Language = 'no'): Promise<CadastralDetails> {
+  private async generateText(prompt: string): Promise<string> {
+    if (this.getClaudeKey()) {
+      return this.callClaude(prompt);
+    }
+    const ai = this.getAI();
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt
+    });
+    return response.text ?? '';
+  }
+
+  async analyzeParcelCadastre(searchQueryOrCoords: string, lang: string = 'no'): Promise<CadastralDetails> {
     const cacheKey = searchQueryOrCoords.trim().toUpperCase();
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey)!;
     }
 
     const ai = this.getAI();
-    const model = ai.getGenerativeModel({
-      model: "gemini-1.5-flash",
-      systemInstruction: `You are a specialized agent for Spanish property information (Catastro).
-      TASK: Identify cadastral data for the following request.
-      INSTRUCTIONS:
-      1. Use Google Search to find official cadastral data from Sede Electrónica del Catastro.
-      2. Find the complete 20-character "Referencia Catastral".
-      3. Find the area in square meters (m²).
-      4. Find the center point (GPS coordinates) of the parcel.
-      5. If the request is for Biar, Alicante, the reference often starts with 03023A.
-      Respond ONLY with a valid JSON object matching the requested schema. Do not return text or markdown outside the JSON block.`,
-    });
-
     try {
-        const result: EnhancedGenerateContentResponse = await model.generateContent({
-            contents: [{ role: "user", parts: [{ text: `Forespørsel: "${searchQueryOrCoords}"` }] }],
-            generationConfig: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: 'OBJECT',
-                    properties: {
-                        cadastralId: { type: 'STRING' },
-                        areaSqm: { type: 'NUMBER' },
-                        landUse: { type: 'STRING' },
-                        municipality: { type: 'STRING' },
-                        latitude: { type: 'NUMBER' },
-                        longitude: { type: 'NUMBER' },
-                        description: { type: 'STRING', nullable: true },
-                    },
-                    required: ['cadastralId', 'areaSqm', 'landUse', 'municipality', 'latitude', 'longitude']
-                },
-                temperature: 0.1,
-            },
-            // @ts-ignore - TODO: Remove when SDK is updated
-            tools: [{ 'googleSearch': {} }],
-        });
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: `Du er en spesialisert agent for spansk eiendomsinformasjon (Catastro).
+        OPPGAVE: Identifiser matrikkeldata for følgende forespørsel: "${searchQueryOrCoords}".
 
-      const data = result.response.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!data) {
-        throw new Error("AI response was empty or invalid.");
+        INSTRUKSER:
+        1. Bruk Google Search til å finne offisielle matrikkeldata fra Sede Electrónica del Catastro.
+        2. Identifiser "Referencia Catastral" (20 tegn) og arealet i m2.
+        3. Hvis forespørselen er for Biar, Alicante, starter referansen ofte med 03043A.
+        4. Returner nøyaktige GPS-koordinater (lat/lon) for senteret av parsellen.
+
+        Returner KUN JSON:
+        {
+          "cadastralId": "20 tegn",
+          "municipalityCode": "3 siffer",
+          "provinceCode": "2 siffer",
+          "areaSqm": antall_m2,
+          "treeCount": estimert_trær,
+          "neighbors": [],
+          "landUse": "Klassifisering",
+          "soilQuality": "Beskrivelse",
+          "municipality": "Navn",
+          "latitude": float,
+          "longitude": float,
+          "description": "Kort sammendrag"
+        }`,
+        config: {
+          tools: [{ googleSearch: {} }],
+          temperature: 0.1,
+        }
+      });
+      
+      const text = response.text || "";
+      const jsonMatch = text.match(/\{[\s\S]*?\}/);
+      
+      if (jsonMatch) {
+        const data = JSON.parse(jsonMatch[0]) as CadastralDetails;
+        
+        if (!data.cadastralId || data.cadastralId.length < 14) {
+          throw new Error("Fant ikke en gyldig matrikkelreferanse. Vennligst sjekk Polígono/Parcela.");
+        }
+        
+        this.cache.set(cacheKey, data);
+        return data;
       }
       
-      const parsedData = JSON.parse(data) as CadastralDetails;
-
-      if (!parsedData.cadastralId || parsedData.cadastralId.length < 14 || !parsedData.areaSqm || !parsedData.latitude) {
-        console.error("Validation Error: Incomplete data from AI", parsedData);
-        throw new Error("The model returned incomplete data. Try a more specific search.");
-      }
-      
-      this.cache.set(cacheKey, parsedData);
-      return parsedData;
-
+      throw new Error("Kunne ikke tyde svaret fra matrikkelregisteret.");
     } catch (error: any) {
       console.error("Cadastral Analysis Error:", error);
-      if (error.message?.includes('500') || error.message?.includes('xhr') || error.message?.includes('API key')) {
-        throw new Error("Communication error with the AI service. Check the API key or try again later.");
+      if (error.message?.includes('500') || error.message?.includes('xhr')) {
+        throw new Error("Tilkoblingsproblem mot spanske registre. Prøv igjen om noen sekunder.");
       }
       throw error;
     }
   }
 
-  async adjustRecipe(currentRecipe: Partial<Recipe>, prompt: string): Promise<Partial<Recipe>> {
+  async adjustRecipe(currentRecipe: Partial<Recipe>, prompt: string, lang: string = 'no'): Promise<Partial<Recipe>> {
     const ai = this.getAI();
-    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-    const result: EnhancedGenerateContentResponse = await model.generateContent({
-        contents: [{ role: 'user', parts: [{text: `Adjust this olive recipe: ${JSON.stringify(currentRecipe)} based on: "${prompt}". Respond in JSON.`}]}],
-        generationConfig: {
-            responseMimeType: "application/json",
-            // Define a schema based on the Recipe type for consistency
-        }
-    });
-    const text = result.response.text();
-    return JSON.parse(text);
-  }
-
-  async analyzeComprehensive(imagesBase64: string[], lang: Language): Promise<ComprehensiveAnalysisResult> {
-    const ai = this.getAI();
-    const model = ai.getGenerativeModel({ 
-        model: "gemini-1.5-pro",
-        systemInstruction: `You are an expert agronomist and botanist specializing in olive trees ("Olea europaea"). Your task is to perform a comprehensive analysis based on user-provided images.
-
-        Analysis Steps:
-        1.  **Identify Subject and Variety**: Identify the main subject of the images (e.g., olive tree, branch, leaves). Attempt to identify the specific olive variety. Rate your confidence in this identification.
-        2.  **Assess Health (PlantDiagnosis)**: Examine the tree for signs of disease, pests, or nutrient deficiencies.
-            *   Classify the condition as 'SUNN' (Healthy), 'OBSERVASJON' (Observation needed), or 'SYK' (Diseased/Infested).
-            *   Provide a clear diagnosis (e.g., "Olive peacock spot (Spilocaea oleaginea)", "Sooty mold", "Nitrogen deficiency").
-            *   Recommend concrete, actionable steps to address any issues.
-        3.  **Create Pruning Plan (PruningPlan)**:
-            *   Estimate the tree's age and state its type (olive tree).
-            *   Identify specific areas on the tree that need pruning (e.g., "lower crossing branches", "suckers at base", "dense canopy center").
-            *   For each area, describe the action needed (e.g., "Remove completely", "Thin out", "Head back").
-            *   Assign a priority ('LAV', 'MIDDELS', 'HØY') to each step. Use the image coordinates (x, y from 0 to 1) to pinpoint the location of each step.
-            *   Recommend the best time of year for pruning (e.g., "Late winter, after frost risk but before flowering") and explain why.
-            *   List the necessary tools (e.g., "Pruning shears", "Loppers", "Pruning saw").
-        4.  **Evaluate Image Quality**: Determine if more or different images are needed for a more accurate analysis (e.g., "Close-up of leaves", "Photo of the entire tree", "Image of the trunk base"). List any missing details that would improve the analysis.
-        
-        You must respond in the specified language: ${lang}.
-        Output ONLY the JSON object matching the schema.`,
-    });
-
-    const imageParts: Part[] = imagesBase64.map(data => ({
-        inlineData: {
-            mimeType: 'image/jpeg',
-            data
-        }
-    }));
-    
-    const textPrompt = `Analyze the provided image(s) of an olive tree and provide a comprehensive report in ${lang}.`;
-
-    try {
-        const result: EnhancedGenerateContentResponse = await model.generateContent({
-            contents: [{ role: 'user', parts: [...imageParts, { text: textPrompt }] }],
-            generationConfig: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: 'OBJECT',
-                    properties: {
-                        diagnosis: {
-                            type: 'OBJECT',
-                            properties: {
-                                subject: { type: 'STRING' },
-                                variety: { type: 'STRING' },
-                                condition: { type: 'STRING', enum: ['SUNN', 'OBSERVASJON', 'SYK'] },
-                                diagnosis: { type: 'STRING' },
-                                actions: { type: 'ARRAY', items: { type: 'STRING' } },
-                            },
-                            required: ['subject', 'variety', 'condition', 'diagnosis', 'actions']
-                        },
-                        pruning: {
-                            type: 'OBJECT',
-                            properties: {
-                                treeType: { type: 'STRING' },
-                                ageEstimate: { type: 'STRING' },
-                                pruningSteps: {
-                                    type: 'ARRAY',
-                                    items: {
-                                        type: 'OBJECT',
-                                        properties: {
-                                            area: { type: 'STRING' },
-                                            action: { type: 'STRING' },
-                                            priority: { type: 'STRING', enum: ['LAV', 'MIDDELS', 'HØY'] },
-                                            x: { type: 'NUMBER' },
-                                            y: { type: 'NUMBER' },
-                                        },
-                                        required: ['area', 'action', 'priority', 'x', 'y']
-                                    }
-                                },
-                                recommendedDate: { type: 'STRING' },
-                                timingAdvice: { type: 'STRING' },
-                                toolsNeeded: { type: 'ARRAY', items: { type: 'STRING' } },
-                            },
-                             required: ['treeType', 'ageEstimate', 'pruningSteps', 'recommendedDate', 'timingAdvice', 'toolsNeeded']
-                        },
-                        varietyConfidence: { type: 'NUMBER' },
-                        needsMoreImages: { type: 'BOOLEAN' },
-                        missingDetails: { type: 'ARRAY', items: { type: 'STRING' } },
-                    },
-                    required: ['diagnosis', 'pruning', 'varietyConfidence', 'needsMoreImages', 'missingDetails']
-                },
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `Juster denne olivenoppskriften: ${JSON.stringify(currentRecipe)} basert på: "${prompt}". Svar i JSON.`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            name: { type: Type.STRING },
+            ingredients: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING },
+                  amount: { type: Type.STRING },
+                  unit: { type: Type.STRING }
+                }
+              }
             },
-        });
-        
-        const text = result.response.text();
-        return JSON.parse(text) as ComprehensiveAnalysisResult;
-
-    } catch (error) {
-        console.error("Comprehensive Analysis Error:", error);
-        throw new Error("Failed to generate comprehensive AI analysis. Please check your API key and network connection.");
-    }
-  }
-
-  async getIrrigationRecommendation(sensors: Sensor[], forecast: any[], lang: Language): Promise<IrrigationAdvice> {
-    const ai = this.getAI();
-    const model = ai.getGenerativeModel({
-        model: "gemini-1.5-flash",
-        systemInstruction: `You are an expert irrigation advisor for olive farms. Your task is to provide a concrete irrigation recommendation based on sensor data and weather forecasts.
-
-        Analyze the provided data to determine the immediate water needs of the olive grove.
-        
-        Respond in ${lang} with ONLY a JSON object matching the schema.`,
-    });
-    
-    const prompt = `
-        Current sensor data: ${JSON.stringify(sensors)}
-        Weather forecast: ${JSON.stringify(forecast)}
-        
-        Based on this data, provide a detailed irrigation recommendation.
-    `;
-    
-    try {
-        const result: EnhancedGenerateContentResponse = await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: 'OBJECT',
-                    properties: {
-                        recommendation: { type: 'STRING' },
-                        criticalFactors: { type: 'ARRAY', items: { type: 'STRING' } },
-                        amount: { type: 'STRING' },
-                        timing: { type: 'STRING' },
-                        confidence: { type: 'NUMBER' },
-                        reasoning: { type: 'STRING' },
-                    },
-                    required: ['recommendation', 'criticalFactors', 'amount', 'timing', 'confidence', 'reasoning']
-                },
-            },
-        });
-        const text = result.response.text();
-        return JSON.parse(text) as IrrigationAdvice;
-    } catch(error) {
-        console.error("Irrigation Recommendation Error:", error);
-        throw new Error("Failed to get irrigation recommendation.");
-    }
-  }
-
-  async getYearlyRainfallAnalysis(
-    monthlyData: { name: string; rain: number; normal: number }[],
-    locationName: string,
-    lang: Language = 'no'
-  ): Promise<{ title: string; analysis: string }> {
-    const ai = this.getAI();
-    const model = ai.getGenerativeModel({
-        model: "gemini-1.5-flash",
-        systemInstruction: `You are an AI agronomist with a PhD in olive cultivation and 30 years of experience with climate effects on Mediterranean crops. You are analyzing rainfall data for an olive farm in ${locationName}.
-
-        TASK:
-        1.  **Analyze Data**: Compare "rain" against "normal" for the whole year and for critical periods.
-        2.  **Identify Critical Periods**: Focus on how rainfall deviations (deficits and surpluses) might have affected:
-            *   **Spring (Mar-May)**: Crucial for flowering and fruit set. Drought here is very negative.
-            *   **Summer/Early Autumn (Jun-Oct)**: Crucial for oil accumulation. Drought stress can reduce oil content.
-            *   **Winter (Nov-Feb)**: Tree recovery period.
-        3.  **Formulate Conclusion/Trend**: Provide a concrete prediction for the next season's harvest. Is the trend positive, negative, or neutral? Provide your professional reasoning.
-        4.  **Be Specific**: Use numbers from the data to support your claims (e.g., "A rainfall deficit of X% in May may have...").
-        
-        OUTPUT FORMAT:
-        Return ONLY a valid JSON object in ${lang} with the specified structure. Do not write anything before or after the JSON object.`,
-    });
-
-    const prompt = `Here is the data:
-        ${JSON.stringify(monthlyData, null, 2)}
-    `;
-
-    try {
-      const result: EnhancedGenerateContentResponse = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: 'OBJECT',
-            properties: {
-                title: { type: 'STRING' },
-                analysis: { type: 'STRING' }
-            },
-            required: ['title', 'analysis']
-          },
-          temperature: 0.4,
+            notes: { type: Type.STRING }
+          }
         }
-      });
-      const text = result.response.text();
-      const analysisResult = JSON.parse(text) as { title: string; analysis: string };
-      if (!analysisResult.title || !analysisResult.analysis) {
-        throw new Error("AI response missing title or analysis.");
       }
-      return analysisResult;
-    } catch (error: any) {
-      console.error("Yearly Rainfall Analysis Error:", error);
-      throw new Error("Could not generate yearly rainfall analysis.");
-    }
+    });
+    return JSON.parse(response.text || "{}");
+  }
+
+  async analyzeComprehensive(imagesBase64: string[], lang: string): Promise<ComprehensiveAnalysisResult> {
+    const ai = this.getAI();
+    const imageParts = imagesBase64.map(data => ({ inlineData: { mimeType: 'image/jpeg', data } }));
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-pro',
+      contents: { parts: [...imageParts, { text: `Du er en verdensekspert på oliven (Olea europaea) og mediterrant landbruk med 30+ års erfaring.
+
+OPPGAVE: Utfør en komplett, profesjonell analyse av disse olivenbildene.
+
+HELSEANALYSE – Se etter:
+- Sykdommer: Olivenbladflekk (Spilocaea oleagina), Antracnose (Colletotrichum acutatum), Verticilliumvisning (Verticillium dahliae), Olivenknoll (Pseudomonas savastanoi), Cercospora-flekk
+- Skadedyr: Olivenflue (Bactrocera oleae), Olivenmøll (Prays oleae), Olivenvikler, Cottony cushion scale, bladlus
+- Næringsstress: Nitrogen- (gulning), Jern- (klorose), Bor- (misformede knopper), Kalsium-mangel
+- Vanningsstress: Overdreven tørke (rullet bladkant) eller vanningsstress (blågrønne blader)
+- Treform: Sentralstemme vs vasestemme, lysgjennomtrengning, kroneprofil
+
+SORTIDENTIFIKASJON – Forsøk å identifisere:
+- Picual (trekantede blader, robuste greiner)
+- Arbequina (små runde blader, hengende greiner)
+- Hojiblanca (store lyse blader, flatt grenkrona)
+- Cornicabra (tykke mørke blader, greiner med karakteristisk bøy)
+- Manzanilla, Gordal, Empeltre, Frantoio, Leccino, eller andre
+- Gi eksakt konfidenspoeng 0-100
+
+ALDERSVURDERING:
+- Undersøk stammediameter og bark-tekstur
+- Veksttegn og kronform
+- Estimer alder: 1-10 år (ung), 10-50 år (etablert), 50-200 år (gammel), 200+ år (historisk)
+
+BESKJÆRINGSPLAN:
+- Prioriter kuttpunkter basert på treform og lysbehov
+- Angi prioritet (HØY/MIDDELS/LAV) for hvert kutt
+- Beskriv nøyaktig hvilken gren/område som skal kuttes og hvorfor
+- Gi anbefalt tidspunkt (etter høst = des-jan, vedlikehold = feb-mar)
+- Verktøy som trengs (greinsag, hekksaks, baufil, etc.)
+
+Svar i JSON-format.` }] },
+      config: { 
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            diagnosis: {
+              type: Type.OBJECT,
+              properties: {
+                subject: { type: Type.STRING },
+                variety: { type: Type.STRING },
+                condition: { type: Type.STRING },
+                diagnosis: { type: Type.STRING },
+                actions: { type: Type.ARRAY, items: { type: Type.STRING } }
+              },
+              required: ['subject', 'variety', 'condition', 'diagnosis', 'actions']
+            },
+            pruning: {
+              type: Type.OBJECT,
+              properties: {
+                treeType: { type: Type.STRING },
+                ageEstimate: { type: Type.STRING },
+                pruningSteps: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      area: { type: Type.STRING },
+                      action: { type: Type.STRING },
+                      priority: { type: Type.STRING },
+                      x: { type: Type.NUMBER },
+                      y: { type: Type.NUMBER }
+                    }
+                  }
+                },
+                recommendedDate: { type: Type.STRING },
+                timingAdvice: { type: Type.STRING },
+                toolsNeeded: { type: Type.ARRAY, items: { type: Type.STRING } }
+              },
+              required: ['treeType', 'ageEstimate', 'pruningSteps', 'recommendedDate', 'timingAdvice', 'toolsNeeded']
+            },
+            varietyConfidence: { type: Type.NUMBER },
+            needsMoreImages: { type: Type.BOOLEAN },
+            missingDetails: { type: Type.ARRAY, items: { type: Type.STRING } }
+          },
+          required: ['diagnosis', 'pruning', 'varietyConfidence', 'needsMoreImages', 'missingDetails']
+        }
+      }
+    });
+    return JSON.parse(response.text || "{}");
+  }
+
+  async analyzeDrone(imagesBase64: string[], lang: string): Promise<DroneAnalysisResult> {
+    const ai = this.getAI();
+    const imageParts = imagesBase64.map(data => ({ inlineData: { mimeType: 'image/jpeg', data } }));
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: { parts: [...imageParts, { text: `Du er en presisjonsjordbruksekspert med drone-analyse. Analyser dette luftbildet av en olivenlund.
+
+Gi:
+- Kanonitettstetthet (%) og krondekning
+- NDVI-simulasjon (0.0–1.0) basert på fargeintensitet
+- Vannstressvurdering (Lav/Moderat/Høy) basert på blad-/kronefarge
+- Termiske anomalier (soner med stress, sykdom, varme)
+- Teller-estimat av trær synlige i bildet
+- Identifiser mulige problemsoner (tørre flekker, sykdomsspredning, høydedifferanser)
+- Luftig sammendrag med agronomiske anbefalinger
+
+Svar i JSON.` }] },
+      config: { responseMimeType: "application/json" }
+    });
+    return JSON.parse(response.text || "{}");
+  }
+
+  async analyzePruning(image: string, lang: string): Promise<PruningPlan> {
+    const ai = this.getAI();
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-pro',
+      contents: { parts: [{ inlineData: { mimeType: 'image/jpeg', data: image } }, { text: `Du er olivenbeskjæringsmester med ekspertise fra Spania, Italia og Marokko.
+
+Lag en detaljert BESKJÆRINGSPLAN for dette treet:
+
+1. TREANALYSE:
+   - Sort (Picual, Arbequina, Hojiblanca, etc.) og aldersstimeering
+   - Nåværende form (vase, åpen midt, flerleder)
+   - Lysgjennomtrengning (estimert %)
+
+2. PRIORITERTE KUTT:
+   - For hvert kutt: område, handling, prioritet (HØY/MIDDELS/LAV)
+   - Begrunn hvert kutt (lysblokking, sykdom, for gammel ved, ubalanse)
+   - Gi x,y koordinater i bildet (0-100 skala)
+
+3. TIMING:
+   - Beste tidspunkt (oliven beskjæres normalt jan-mars i Spania)
+   - Om treet trenger kraftig foryngelsesbeskjæring vs lett vedlikehold
+
+4. VERKTØY: List spesifikke verktøy med begrunnelse
+
+Svar i JSON.` }] },
+      config: { responseMimeType: "application/json" }
+    });
+    return JSON.parse(response.text || "{}");
+  }
+
+  async analyzeReceipt(base64Image: string): Promise<any> {
+    const ai = this.getAI();
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: { parts: [{ inlineData: { mimeType: 'image/jpeg', data: base64Image } }, { text: `Analyser denne kvitteringen/fakturaen fra et gårdsbruk.
+
+Ekstraher:
+- Totalbeløp (number, uten valutasymbol)
+- Dato (YYYY-MM-DD format)
+- Kategori: velg én av [Gjødsel, Arbeidskraft, Vedlikehold, Vann, Sprøytemiddel, Drivstoff, Utstyr, Salg, Annet]
+- Kort notat (maks 60 tegn) som beskriver hva kjøpet gjelder
+
+Svar i JSON: { "amount": number, "date": "YYYY-MM-DD", "category": "...", "note": "..." }` }] },
+      config: { responseMimeType: "application/json" }
+    });
+    return JSON.parse(response.text || "{}");
+  }
+
+  async getFarmInsights(weather: any, soil: any, lang: string, location: string): Promise<FarmInsight[]> {
+    if (!this.getGeminiKey() && !this.getClaudeKey()) return [];
+    try {
+      const ai = this.getAI();
+      const weatherSummary = weather ? `Temp: ${weather.temperature_2m}°C, Fuktighet: ${weather.relative_humidity_2m}%, Vind: ${weather.wind_speed_10m} km/t` : 'ukjent vær';
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: `Du er en erfaren oliven-agro-konsulent for ${location} (Sør-Spania, Alicante-provinsen).
+
+Nåværende værbetingelser: ${weatherSummary}
+Tidspunkt: ${new Date().toLocaleDateString('no-NO', { month: 'long', year: 'numeric' })}
+
+Gi 3 konkrete, handlingsorienterte gårdstips for olivendyrkere i denne perioden. Fokuser på:
+- Sesongaktuell aktivitet (beskjæring, gjødsling, sprøyting, høsting)
+- Spesifikke olivensykdommer og skadedyr å passe på nå
+- Lønnsomhetstips (marked, prosessering, kvalitetsforbedring)
+
+Format: JSON array med [ { "id": "1", "tittel": "...", "beskrivelse": "..." }, ... ]
+Bruk ${lang === 'no' ? 'norsk' : 'engelsk'} språk.`,
+        config: { responseMimeType: "application/json" }
+      });
+      return JSON.parse(response.text || "[]");
+    } catch { return []; }
+  }
+
+  async getIrrigationRecommendation(sensors: Sensor[], forecast: any[], lang: string): Promise<IrrigationAdvice> {
+    const ai = this.getAI();
+    const moistureSensors = sensors.filter(s => s.type === 'Moisture');
+    const tempSensors = sensors.filter(s => s.type === 'Temperature');
+    const forecastSummary = forecast.slice(0, 5).map((d: any) => `${d.date}: ${d.rainSum}mm nedbør, ET0: ${d.evap}mm`).join('; ');
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `Du er en olivenirrigeringsspesialist.
+
+SENSORER:
+- Jordfuktighet: ${moistureSensors.map(s => `${s.name}: ${s.value}${s.unit}`).join(', ') || 'Ingen data'}
+- Temperatur: ${tempSensors.map(s => `${s.name}: ${s.value}${s.unit}`).join(', ') || 'Ingen data'}
+
+VÆRUTSIKT (neste 5 dager): ${forecastSummary || 'Ingen data'}
+
+For oliven er kritisk vannpunkt ved jordmfuktighet < 35%. Optimal: 45-65%.
+
+Gi:
+- Konkret anbefaling (vann NÅ / vent / juster)
+- Kritiske faktorer som påvirker beslutningen
+- Nøyaktig mengde (liter/tre eller mm/m²)
+- Beste tidspunkt (tidlig morgen anbefales)
+- Konfidensnivå 0-100
+- Kortfattet begrunnelse
+
+Svar i JSON: { "recommendation": "...", "criticalFactors": [...], "amount": "...", "timing": "...", "confidence": number, "reasoning": "..." }`,
+      config: { responseMimeType: "application/json" }
+    });
+    return JSON.parse(response.text || "{}");
+  }
+
+  async getOliveExpertAdvice(topic: string, context: string, lang: string): Promise<{ title: string; content: string; actionItems: string[]; urgency: 'low' | 'medium' | 'high' }> {
+    const ai = this.getAI();
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `Du er VERDENS LEDENDE olivenekspert – agronomidoktor med spesialitet i Olea europaea, med erfaring fra Andalucia, Toscana og Kairouan.
+
+Emne: ${topic}
+Kontekst: ${context}
+Språk: ${lang === 'no' ? 'norsk' : 'engelsk'}
+
+Gi en utfyllende, faglig korrekt svar som inkluderer:
+- Vitenskapelig begrunnelse
+- Praktiske handlingstips
+- Varsler om potensielle risikoer
+- Referanser til anerkjent olivenpraksis
+
+Svar i JSON: { "title": "...", "content": "...", "actionItems": ["...", "..."], "urgency": "low/medium/high" }`,
+      config: { responseMimeType: "application/json" }
+    });
+    return JSON.parse(response.text || "{}");
+  }
+
+  async getProfitabilityAnalysis(batches: any[], transactions: any[], parcels: any[], lang: string): Promise<{
+    totalRevenue: number;
+    totalCosts: number;
+    netProfit: number;
+    profitMargin: number;
+    revenuePerKg: number;
+    costPerKg: number;
+    breakEvenKg: number;
+    insights: string[];
+    parcelROI: Array<{ parcelId: string; roi: number; revenue: number; costs: number }>;
+  }> {
+    const ai = this.getAI();
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `Du er en landbruksøkonom spesialisert i oliven-produksjon.
+
+PRODUKSJONSDATA:
+${JSON.stringify({ batches: batches.slice(0, 10), transactions: transactions.slice(0, 20), parcels })}
+
+Beregn og analyser:
+1. Total omsetning vs kostnader
+2. Netto fortjeneste og margin (%)
+3. Inntekt per kg og kostnad per kg
+4. Break-even volum (kg)
+5. ROI per parsell
+6. 3 konkrete forbedringstips for lønnsomhet
+
+Svar i JSON med nøyaktige tall basert på dataene over.`,
+      config: { responseMimeType: "application/json" }
+    });
+    return JSON.parse(response.text || "{}");
   }
 }
 
