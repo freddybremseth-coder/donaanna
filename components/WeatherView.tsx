@@ -57,15 +57,24 @@ const WeatherView: React.FC<WeatherViewProps> = ({
 
   const handleRefresh = async () => {
     if (!selectedParcel) return;
+    const lat = selectedParcel.lat ?? selectedParcel.coordinates?.[0]?.[0];
+    const lon = selectedParcel.lon ?? selectedParcel.coordinates?.[0]?.[1];
+    if (!lat || !lon) return;
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/weather?lat=${selectedParcel.lat}&lon=${selectedParcel.lon}`);
-      if (!response.ok) throw new Error(t('error_fetching_weather'));
-      const data = await response.json();
+      const res = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+        `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,is_day` +
+        `&hourly=temperature_2m,precipitation_probability,precipitation,wind_speed_10m,weather_code` +
+        `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,et0_fao_evapotranspiration,sunrise,sunset` +
+        `&timezone=auto`
+      );
+      if (!res.ok) throw new Error(t('error_fetching_weather'));
+      const data = await res.json();
       setWeatherData(data);
       setLocationName(selectedParcel.name);
-      setCoords({ lat: selectedParcel.lat, lon: selectedParcel.lon });
+      setCoords({ lat, lon });
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -171,7 +180,7 @@ const WeatherView: React.FC<WeatherViewProps> = ({
             </div>
           </div>
           <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
-            <MapPin size={12} /> {coords.lat.toFixed(3)}, {coords.lon.toFixed(3)}
+            <MapPin size={12} /> {coords.lat?.toFixed(3)}, {coords.lon?.toFixed(3)}
           </p>
         </div>
         <div className="flex items-center gap-2 mt-4 md:mt-0">

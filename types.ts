@@ -45,15 +45,21 @@ export interface Parcel {
   id: string;
   name: string;
   municipality?: string;
-  cadastralId: string;
-  cropType: string; 
-  treeVariety?: string; 
-  area: number; 
-  treeCount: number;
-  irrigationStatus: 'Optimal' | 'Low' | 'Critical';
-  coordinates: [number, number][]; 
-  documentIds?: string[]; 
-  registryDetails?: string; 
+  cadastralId?: string;
+  cropType?: string;
+  crop?: string;
+  treeVariety?: string;
+  area: number;
+  treeCount?: number;
+  irrigationStatus?: 'Optimal' | 'Low' | 'Critical';
+  coordinates?: [number, number][];
+  lat?: number;
+  lon?: number;
+  soilType?: string;
+  registrationDate?: string;
+  boundaries?: any[];
+  documentIds?: string[];
+  registryDetails?: string;
 }
 
 export interface ComprehensiveAnalysis {
@@ -73,6 +79,21 @@ export interface BatchSale {
   note?: string;
 }
 
+export interface BatchLog {
+  stage: TableOliveStage;
+  startDate: string;
+  notes: string;
+}
+
+export interface BatchQualityMetrics {
+  acidity?: number;
+  peroxide?: number;
+  k232?: number;
+  k270?: number;
+  deltaK?: number;
+  phenols?: number;
+}
+
 export interface Batch {
   id: string;
   parcelId: string;
@@ -80,19 +101,21 @@ export interface Batch {
   oliveType?: string;
   harvestDate: string;
   weight: number;
-  quality: 'Premium' | 'Standard' | 'Commercial';
-  qualityScore: number;
+  quality: 'Premium' | 'Good' | 'Standard' | 'Commercial';
+  qualityScore?: number;
   status: 'ACTIVE' | 'ARCHIVED';
-  laborHours: number;
-  laborCost: number;
+  laborHours?: number;
+  laborCost?: number;
   yieldType: 'Oil' | 'Table';
   oilYieldLiters?: number;
   tableOliveYieldKg?: number;
-  traceabilityCode: string;
+  traceabilityCode?: string;
   currentStage?: TableOliveStage;
   stageStartDate?: string;
   completedStages?: TableOliveStage[];
   sales?: BatchSale[];
+  logs?: BatchLog[];
+  qualityMetrics?: BatchQualityMetrics;
 }
 
 export interface Transaction {
