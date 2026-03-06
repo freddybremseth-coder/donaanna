@@ -15,15 +15,14 @@ import LandingPage from './components/LandingPage';
 import AdminDashboard from './components/AdminDashboard';
 import IoTDashboard from './components/IoTDashboard';
 import LoginModal, { StoredUser } from './components/LoginModal';
-import ProfitabilityPage from './pages/Profitability'; // <-- NEW
-import { UserProfile } from './types';
-import { Language } from './services/i18nService';
+import ProfitabilityPage from './pages/Profitability';
+import { UserProfile, Language } from './types'; // Language is already here
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [language, setLanguage] = useState<Language>('en');
+  const [language, setLanguage] = useState<Language>('no'); // Default to Norwegian
   const [showLogin, setShowLogin] = useState(false);
   const [loginDefaultMode, setLoginDefaultMode] = useState<'login' | 'register'>('login');
   
@@ -41,6 +40,7 @@ const App: React.FC = () => {
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
   });
 
+  // ... (rest of the functions are the same)
   const fetchWeather = async (lat: number, lon: number) => {
     try {
       const res = await fetch(
@@ -77,7 +77,6 @@ const App: React.FC = () => {
     }
   };
 
-
   useEffect(() => {
     const session = localStorage.getItem('olivia_session');
     if (session) {
@@ -86,9 +85,7 @@ const App: React.FC = () => {
         setUser(savedUser);
         setIsAdmin(savedAdmin);
         setIsLoggedIn(true);
-      } catch {
-        localStorage.removeItem('olivia_session');
-      }
+      } catch { localStorage.removeItem('olivia_session'); }
     }
 
     const settings = localStorage.getItem('olivia_settings');
@@ -96,21 +93,14 @@ const App: React.FC = () => {
       const parsed = JSON.parse(settings);
       if (parsed.language) setLanguage(parsed.language);
     }
-
-    // Fetch initial weather data on load
     fetchWeather(coords.lat, coords.lon);
-
   }, []);
 
   const handleLoginSuccess = (storedUser: StoredUser, admin: boolean) => {
     const profileUser: UserProfile = {
-      id: storedUser.id,
-      name: storedUser.name,
-      email: storedUser.email,
-      role: storedUser.role,
-      subscription: storedUser.subscription,
-      subscriptionStart: storedUser.subscriptionStart,
-      avatar: storedUser.avatar
+      id: storedUser.id, name: storedUser.name, email: storedUser.email,
+      role: storedUser.role, subscription: storedUser.subscription,
+      subscriptionStart: storedUser.subscriptionStart, avatar: storedUser.avatar
     };
     setUser(profileUser);
     setIsAdmin(admin);
@@ -120,9 +110,7 @@ const App: React.FC = () => {
   };
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
-    setIsAdmin(false);
-    setActiveTab('dashboard');
+    setIsLoggedIn(false); setIsAdmin(false); setActiveTab('dashboard');
     localStorage.removeItem('olivia_session');
   };
 
@@ -142,11 +130,7 @@ const App: React.FC = () => {
       <>
         <LandingPage onLogin={() => openLogin('login')} onAdminLogin={() => openLogin('login')} onRegister={() => openLogin('register')} />
         {showLogin && (
-          <LoginModal
-            defaultMode={loginDefaultMode}
-            onClose={() => setShowLogin(false)}
-            onLogin={handleLoginSuccess}
-          />
+          <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
         )}
       </>
     );
@@ -162,7 +146,7 @@ const App: React.FC = () => {
       case 'map': return <FarmMap language={language} />;
       case 'weather': return <WeatherView initialData={weatherData} initialLocationName={locationName} initialCoords={coords} />;
       case 'production': return <ProductionView />;
-      case 'economy': return <ProfitabilityPage />; // <-- UPDATED
+      case 'economy': return <ProfitabilityPage language={language} />; // <-- UPDATED HERE
       case 'fleet': return <FleetView />;
       case 'irrigation': return <IrrigationView />;
       case 'tasks': return <TasksView />;

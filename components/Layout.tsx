@@ -6,7 +6,8 @@ import {
   Activity
 } from 'lucide-react';
 import { UserProfile } from '../types';
-import { Language, getTranslation } from '../services/i18nService';
+import { useTranslation } from '../services/i18nService';
+import { Language } from '../types';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,26 +19,54 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange, onLogout, language }) => {
+  const { t } = useTranslation(language);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const menuItems = [
-    { id: 'dashboard', icon: LayoutDashboard, label: getTranslation('dashboard', language) },
-    { id: 'consultant', icon: Sparkles, label: getTranslation('consultant', language) },
-    { id: 'pruning', icon: Scissors, label: getTranslation('pruning', language) },
-    { id: 'map', icon: MapIcon, label: getTranslation('map', language) },
-    { id: 'weather', icon: CloudSun, label: getTranslation('weather', language) },
-    { id: 'production', icon: Sprout, label: getTranslation('production', language) },
-    { id: 'economy', icon: TrendingUp, label: getTranslation('economy', language) },
-    { id: 'fleet', icon: Truck, label: getTranslation('fleet', language) },
-    { id: 'irrigation', icon: Droplets, label: getTranslation('irrigation', language) },
-    { id: 'tasks', icon: ClipboardList, label: getTranslation('tasks', language) },
-    { id: 'iot', icon: Activity, label: 'IoT Sensorer' },
+    { id: 'dashboard', icon: LayoutDashboard, label: t('dashboard') },
+    { id: 'consultant', icon: Sparkles, label: t('consultant') },
+    { id: 'pruning', icon: Scissors, label: t('pruning') },
+    { id: 'map', icon: MapIcon, label: t('map') },
+    { id: 'weather', icon: CloudSun, label: t('weather') },
+    { id: 'production', icon: Sprout, label: t('production') },
+    { id: 'economy', icon: TrendingUp, label: t('economy') },
+    { id: 'fleet', icon: Truck, label: t('fleet') },
+    { id: 'irrigation', icon: Droplets, label: t('irrigation') },
+    { id: 'tasks', icon: ClipboardList, label: t('tasks') },
+    { id: 'iot', icon: Activity, label: t('iot_sensors_menu') },
   ];
 
   const adminItems = user.role === 'super_admin' ? [
-    { id: 'admin', icon: ShieldCheck, label: getTranslation('admin', language) }
+    { id: 'admin', icon: ShieldCheck, label: t('admin') }
   ] : [];
+
+  const allMenuItems = [...menuItems, ...adminItems];
+
+  const renderMenuItem = (item: typeof menuItems[0], isMobile: boolean) => (
+    <button
+      key={item.id}
+      onClick={() => {
+        onTabChange(item.id);
+        if (isMobile) setIsMobileMenuOpen(false);
+      }}
+      className={`w-full flex items-center gap-4 p-${isMobile ? '4' : '3.5'} rounded-xl font-medium transition-all group ${
+        activeTab === item.id
+          ? isMobile
+            ? 'bg-green-500/10 text-green-400'
+            : 'bg-green-500 text-black shadow-[0_0_20px_rgba(34,197,94,0.3)]'
+          : `text-slate-500 hover:text-slate-300 ${!isMobile && 'hover:bg-white/5'}`
+      }`}
+    >
+      <item.icon size={20} className={activeTab === item.id ? '' : 'group-hover:scale-110 transition-transform'} />
+      { (isSidebarOpen || isMobile) && <span className="text-sm truncate">{item.label}</span>}
+      {!isSidebarOpen && !isMobile && (
+          <div className="absolute left-full ml-4 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap">
+            {item.label}
+          </div>
+      )}
+    </button>
+  );
 
   return (
     <div className="flex h-screen bg-[#0a0a0b] text-slate-200 overflow-hidden">
@@ -56,32 +85,18 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
       {isMobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-40 bg-black/95 pt-20 px-6 overflow-y-auto">
           <div className="space-y-2">
-            {[...menuItems, ...adminItems].map((item) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  onTabChange(item.id);
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`w-full flex items-center gap-4 p-4 rounded-2xl font-medium transition-all ${
-                  activeTab === item.id ? 'bg-green-500/10 text-green-400' : 'text-slate-500'
-                }`}
-              >
-                <item.icon size={20} />
-                <span>{item.label}</span>
-              </button>
-            ))}
+            {allMenuItems.map(item => renderMenuItem(item, true))}
             <div className="pt-8 border-t border-white/10 mt-8 space-y-2">
               <button 
                 onClick={() => { onTabChange('settings'); setIsMobileMenuOpen(false); }}
                 className={`w-full flex items-center gap-4 p-4 rounded-2xl font-medium ${activeTab === 'settings' ? 'text-green-400' : 'text-slate-500'}`}
               >
                 <Settings size={20} />
-                <span>{getTranslation('settings', language)}</span>
+                <span>{t('settings')}</span>
               </button>
               <button onClick={onLogout} className="w-full flex items-center gap-4 p-4 rounded-2xl font-medium text-red-400">
                 <LogOut size={20} />
-                <span>{getTranslation('logout', language)}</span>
+                <span>{t('logout')}</span>
               </button>
             </div>
           </div>
@@ -98,25 +113,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
         </div>
 
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
-          {[...menuItems, ...adminItems].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onTabChange(item.id)}
-              className={`w-full flex items-center gap-4 p-3.5 rounded-xl font-medium transition-all group ${
-                activeTab === item.id 
-                  ? 'bg-green-500 text-black shadow-[0_0_20px_rgba(34,197,94,0.3)]' 
-                  : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-              }`}
-            >
-              <item.icon size={20} className={activeTab === item.id ? '' : 'group-hover:scale-110 transition-transform'} />
-              {isSidebarOpen && <span className="text-sm truncate">{item.label}</span>}
-              {!isSidebarOpen && (
-                 <div className="absolute left-full ml-4 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap">
-                   {item.label}
-                 </div>
-              )}
-            </button>
-          ))}
+          {allMenuItems.map(item => renderMenuItem(item, false))}
         </nav>
 
         <div className="p-4 border-t border-white/10 space-y-1 bg-black/20">
@@ -127,11 +124,11 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
             }`}
           >
             <Settings size={20} />
-            {isSidebarOpen && <span className="text-sm">{getTranslation('settings', language)}</span>}
+            {isSidebarOpen && <span className="text-sm">{t('settings')}</span>}
           </button>
           <button onClick={onLogout} className="w-full flex items-center gap-4 p-3.5 rounded-xl font-medium text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all">
             <LogOut size={20} />
-            {isSidebarOpen && <span className="text-sm">{getTranslation('logout', language)}</span>}
+            {isSidebarOpen && <span className="text-sm">{t('logout')}</span>}
           </button>
           
           {isSidebarOpen && (

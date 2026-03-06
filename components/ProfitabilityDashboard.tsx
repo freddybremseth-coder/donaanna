@@ -8,9 +8,10 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart as RechartsPieChart, Pie, Cell
 } from 'recharts';
-import { CostCategory, RevenueCategory, ProfitabilitySnapshot } from '../types';
+import { CostCategory, RevenueCategory, ProfitabilitySnapshot, Language } from '../types';
+import { useTranslation } from '../services/i18nService';
 
-// Mock data for initial development
+// Mock data for initial development - will be replaced with API data
 const MOCK_SNAPSHOT: ProfitabilitySnapshot = {
   id: 'total_2024',
   type: 'Total',
@@ -54,7 +55,12 @@ const CATEGORY_ICONS: Record<CostCategory, React.ReactNode> = {
   'ANNET': <MoreHorizontal size={12} />
 };
 
-const ProfitabilityDashboard: React.FC = () => {
+interface ProfitabilityDashboardProps {
+  language: Language;
+}
+
+const ProfitabilityDashboard: React.FC<ProfitabilityDashboardProps> = ({ language }) => {
+  const { t } = useTranslation(language);
   const [snapshot, setSnapshot] = useState<ProfitabilitySnapshot>(MOCK_SNAPSHOT);
   const [timeframe, setTimeframe] = useState('yearly');
 
@@ -64,12 +70,20 @@ const ProfitabilityDashboard: React.FC = () => {
   }, [snapshot]);
 
   const revenueChartData = useMemo(() => {
-    return Object.entries(snapshot.revenueBreakdown).map(([name, value]) => ({ name, value }));
-  }, [snapshot]);
+    return Object.entries(snapshot.revenueBreakdown).map(([name, value]) => ({ name: t(name as any) || name, value }));
+  }, [snapshot, t]);
 
   const costChartData = useMemo(() => {
-    return Object.entries(snapshot.costBreakdown).map(([name, value]) => ({ name, value }));
-  }, [snapshot]);
+    return Object.entries(snapshot.costBreakdown).map(([name, value]) => ({ name: t(name as any) || name, value }));
+  }, [snapshot, t]);
+
+  const barChartData = useMemo(() => {
+    return [{ 
+      name: snapshot.label, 
+      [t('REVENUE')]: snapshot.totalRevenue, 
+      [t('COSTS')]: snapshot.totalCosts 
+    }];
+  }, [snapshot, t]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
@@ -77,41 +91,40 @@ const ProfitabilityDashboard: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-            <DollarSign className="text-green-400" /> Lønnsomhetsoversikt
+            <DollarSign className="text-green-400" /> {t('profitability_overview')}
           </h2>
           <p className="text-slate-500 text-sm font-bold uppercase tracking-widest flex items-center gap-2 mt-1">
-            Økonomisk resultat for DonaAnna.com
+            {t('economic_result_for')}
           </p>
         </div>
         <div className="relative">
           <button className="flex items-center gap-2 text-sm text-slate-300 font-bold bg-white/5 px-4 py-2 rounded-lg border border-white/10">
             <Calendar size={16} />
-            <span>Dette året</span>
+            <span>{t('this_year')}</span>
             <ChevronDown size={16} />
           </button>
-          {/* Dropdown for timeframe selection can be added here */}
         </div>
       </div>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard 
-          title="Total omsetning" 
+          title={t('total_revenue')}
           value={`kr ${snapshot.totalRevenue.toLocaleString('no-NO')}`}
           icon={<TrendingUp className="text-green-400" />} 
         />
         <MetricCard 
-          title="Totale kostnader" 
+          title={t('total_costs')} 
           value={`kr ${snapshot.totalCosts.toLocaleString('no-NO')}`}
           icon={<TrendingDown className="text-red-400" />} 
         />
         <MetricCard 
-          title="Nettoresultat" 
+          title={t('net_profit')} 
           value={`kr ${snapshot.netProfit.toLocaleString('no-NO')}`}
           icon={<DollarSign className="text-yellow-400" />} 
         />
         <MetricCard 
-          title="Driftsmargin" 
+          title={t('profit_margin')} 
           value={`${profitMargin.toFixed(1)}%`}
           icon={<PieChart className="text-purple-400" />} 
         />
@@ -121,11 +134,11 @@ const ProfitabilityDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         <div className="lg:col-span-3 glass rounded-[2.5rem] p-8 border border-white/10">
           <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-            <BarChart2 size={16} /> Inntekter vs. Kostnader
+            <BarChart2 size={16} /> {t('revenue_vs_costs')}
           </h3>
           <div className="h-80">
              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={[{ name: snapshot.label, Inntekter: snapshot.totalRevenue, Kostnader: snapshot.totalCosts }]}>
+                <BarChart data={barChartData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                   <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `kr ${Number(val) / 1000}k`} />
@@ -134,8 +147,8 @@ const ProfitabilityDashboard: React.FC = () => {
                     formatter={(value: number) => `kr ${value.toLocaleString('no-NO')}`}
                    />
                   <Legend wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold' }} />
-                  <Bar dataKey="Inntekter" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Kostnader" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey={t('REVENUE')} fill="#22c55e" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey={t('COSTS')} fill="#ef4444" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
           </div>
@@ -143,7 +156,7 @@ const ProfitabilityDashboard: React.FC = () => {
 
         <div className="lg:col-span-2 glass rounded-[2.5rem] p-8 border border-white/10">
           <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-            <PieChart size={16} /> Inntektsfordeling
+            <PieChart size={16} /> {t('revenue_distribution')}
           </h3>
           <div className="h-80 flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
@@ -170,7 +183,7 @@ const ProfitabilityDashboard: React.FC = () => {
         
       <div className="glass rounded-[2.5rem] p-8 border border-white/10">
         <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-          <TrendingDown size={16} /> Kostnadsfordeling
+          <TrendingDown size={16} /> {t('cost_distribution')}
         </h3>
         <div className="space-y-4">
           {costChartData.sort((a,b) => b.value - a.value).map((item, index) => {
@@ -179,7 +192,7 @@ const ProfitabilityDashboard: React.FC = () => {
               <div key={item.name} className="flex items-center gap-4">
                 <div className="flex items-center gap-2 w-40">
                   <span className="text-slate-500">{CATEGORY_ICONS[item.name as CostCategory] || <MoreHorizontal size={12} />}</span>
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300">{item.name}</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300">{t(item.name as any) || item.name}</span>
                 </div>
                 <div className="flex-1 bg-white/5 rounded-full h-2.5">
                   <div 

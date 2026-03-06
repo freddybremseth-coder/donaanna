@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area 
 } from 'recharts';
@@ -15,7 +15,8 @@ import {
   RefreshCcw
 } from 'lucide-react';
 import { geminiService, FarmInsight } from '../services/geminiService';
-import { Language, getTranslation } from '../services/i18nService';
+import { useTranslation } from '../services/i18nService';
+import { Language } from '../types';
 import GlossaryText from './GlossaryText';
 
 interface DashboardProps {
@@ -24,23 +25,8 @@ interface DashboardProps {
   locationName: string;
 }
 
-const mockEconomicData = [
-  { month: 'Jan', revenue: 4500, cost: 3200 },
-  { month: 'Feb', revenue: 5200, cost: 3400 },
-  { month: 'Mar', revenue: 4800, cost: 3100 },
-  { month: 'Apr', revenue: 6100, cost: 3800 },
-  { month: 'May', revenue: 5900, cost: 4000 },
-  { month: 'Jun', revenue: 7200, cost: 4200 },
-];
-
-const mockHarvestData = [
-  { parcel: 'Nord', weight: 1200 },
-  { parcel: 'Sør', weight: 850 },
-  { parcel: 'Øst', weight: 1500 },
-  { parcel: 'Vest', weight: 600 },
-];
-
 const Dashboard: React.FC<DashboardProps> = ({ language, weatherData, locationName }) => {
+  const { t } = useTranslation(language);
   const [insights, setInsights] = useState<FarmInsight[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -57,6 +43,8 @@ const Dashboard: React.FC<DashboardProps> = ({ language, weatherData, locationNa
       setInsights(data);
     } catch (err) {
       console.error("Dashboard Insights Error:", err);
+      // In a real app, you'd want to show a user-facing error here
+      setInsights([]); // Clear insights on error
     } finally {
       setLoading(false);
     }
@@ -64,20 +52,39 @@ const Dashboard: React.FC<DashboardProps> = ({ language, weatherData, locationNa
 
   useEffect(() => {
     fetchInsights();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language, weatherData, locationName]);
-  
+
+  const mockEconomicData = useMemo(() => [
+    { month: t('jan'), [t('revenue')]: 4500, [t('cost')]: 3200 },
+    { month: t('feb'), [t('revenue')]: 5200, [t('cost')]: 3400 },
+    { month: t('mar'), [t('revenue')]: 4800, [t('cost')]: 3100 },
+    { month: t('apr'), [t('revenue')]: 6100, [t('cost')]: 3800 },
+    { month: t('may'), [t('revenue')]: 5900, [t('cost')]: 4000 },
+    { month: t('jun'), [t('revenue')]: 7200, [t('cost')]: 4200 },
+  ], [t]);
+
+  const mockHarvestData = useMemo(() => [
+    { parcel: t('north'), weight: 1200 },
+    { parcel: t('south'), weight: 850 },
+    { parcel: t('east'), weight: 1500 },
+    { parcel: t('west'), weight: 600 },
+  ], [t]);
+
+  const topStats = useMemo(() => [
+    { label: t('total_yield'), value: '45,2 t', change: '+12%', icon: Sprout, color: 'text-green-400', bg: 'bg-green-500/10' },
+    { label: t('water_usage'), value: '1,2k m³', change: '-5%', icon: Droplets, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+    { label: t('operating_cost'), value: '€12 400', change: '+2%', icon: TrendingUp, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+    { label: t('iot_sensors'), value: `24 ${t('active')}`, change: '100%', icon: Zap, color: 'text-purple-400', bg: 'bg-purple-500/10' },
+  ], [t]);
+
   const isSprayingSafe = weatherData?.current.wind_speed_10m < 15;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
       {/* Top Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { label: getTranslation('total_yield', language), value: '45,2 t', change: '+12%', icon: Sprout, color: 'text-green-400', bg: 'bg-green-500/10' },
-          { label: getTranslation('water_usage', language), value: '1,2k m³', change: '-5%', icon: Droplets, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-          { label: getTranslation('operating_cost', language), value: '€12 400', change: '+2%', icon: TrendingUp, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
-          { label: getTranslation('iot_sensors', language), value: '24 Aktive', change: '100%', icon: Zap, color: 'text-purple-400', bg: 'bg-purple-500/10' },
-        ].map((stat, i) => (
+        {topStats.map((stat, i) => (
           <div key={i} className="glass rounded-3xl p-6 border border-white/10 hover:border-white/20 transition-all group">
             <div className="flex justify-between items-start mb-4">
               <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color}`}>
@@ -99,7 +106,7 @@ const Dashboard: React.FC<DashboardProps> = ({ language, weatherData, locationNa
             <div className="flex justify-between items-center mb-8">
               <h3 className="text-xl font-bold flex items-center gap-2">
                 <TrendingUp size={20} className="text-green-400" />
-                {getTranslation('economic_analysis', language)}
+                {t('economic_analysis')}
               </h3>
             </div>
             <div className="h-64">
@@ -122,8 +129,8 @@ const Dashboard: React.FC<DashboardProps> = ({ language, weatherData, locationNa
                     contentStyle={{ backgroundColor: '#1e1e24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
                     itemStyle={{ color: '#fff' }}
                   />
-                  <Area type="monotone" dataKey="revenue" stroke="#22c55e" fillOpacity={1} fill="url(#colorRev)" />
-                  <Area type="monotone" dataKey="cost" stroke="#ef4444" fillOpacity={1} fill="url(#colorCost)" />
+                  <Area type="monotone" dataKey={t('revenue')} stroke="#22c55e" fillOpacity={1} fill="url(#colorRev)" />
+                  <Area type="monotone" dataKey={t('cost')} stroke="#ef4444" fillOpacity={1} fill="url(#colorCost)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -135,7 +142,7 @@ const Dashboard: React.FC<DashboardProps> = ({ language, weatherData, locationNa
                  <Wind size={80} className="text-white" />
                </div>
                <div className="relative z-10 space-y-4">
-                 <h4 className="text-slate-400 font-medium">{locationName} • {getTranslation('weather_now', language)}</h4>
+                 <h4 className="text-slate-400 font-medium">{locationName} • {t('weather_now')}</h4>
                  {weatherData ? (
                    <div className="flex items-center gap-6">
                      <div className="flex items-center gap-2">
@@ -144,9 +151,9 @@ const Dashboard: React.FC<DashboardProps> = ({ language, weatherData, locationNa
                      </div>
                      <div className="h-10 w-px bg-white/10"></div>
                      <div className="space-y-1">
-                       <p className="text-xs text-slate-500 uppercase tracking-widest">{weatherData.current.relative_humidity_2m}% {getTranslation('humidity', language)}</p>
+                       <p className="text-xs text-slate-500 uppercase tracking-widest">{weatherData.current.relative_humidity_2m}% {t('humidity')}</p>
                        <p className={`text-sm font-bold ${isSprayingSafe ? 'text-green-400' : 'text-red-400'}`}>
-                         {isSprayingSafe ? getTranslation('perfect_spraying', language) : 'For mye vind'}
+                         {isSprayingSafe ? t('perfect_spraying') : t('too_much_wind')}
                        </p>
                      </div>
                    </div>
@@ -157,7 +164,7 @@ const Dashboard: React.FC<DashboardProps> = ({ language, weatherData, locationNa
             </div>
 
             <div className="glass rounded-3xl p-6 border border-white/10">
-              <h4 className="text-slate-400 font-medium mb-4 uppercase text-xs tracking-widest">{getTranslation('harvest_per_sector', language)}</h4>
+              <h4 className="text-slate-400 font-medium mb-4 uppercase text-xs tracking-widest">{t('harvest_per_sector')}</h4>
               <div className="h-40">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={mockHarvestData} layout="vertical">
@@ -179,7 +186,7 @@ const Dashboard: React.FC<DashboardProps> = ({ language, weatherData, locationNa
                <Brain size={24} className="text-green-400" />
             </div>
             <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-6">
-              {getTranslation('ai_intelligence', language)}
+              {t('ai_intelligence')}
             </h3>
             
             <div className="space-y-6">
@@ -190,8 +197,8 @@ const Dashboard: React.FC<DashboardProps> = ({ language, weatherData, locationNa
               ) : insights.length === 0 ? (
                 <div className="text-center py-6 space-y-3">
                   <AlertCircle size={32} className="text-slate-600 mx-auto" />
-                  <p className="text-sm text-slate-400">{getTranslation('no_api_key', language)}</p>
-                  <p className="text-xs text-slate-600">{getTranslation('go_to_settings', language)}</p>
+                  <p className="text-sm text-slate-400">{t('no_api_key')}</p>
+                  <p className="text-xs text-slate-600">{t('go_to_settings')}</p>
                 </div>
               ) : (
                 insights.map((insight, i) => (
@@ -209,7 +216,7 @@ const Dashboard: React.FC<DashboardProps> = ({ language, weatherData, locationNa
             </div>
 
             <button onClick={fetchInsights} disabled={loading} className="w-full mt-8 py-3 bg-white/5 border border-white/10 rounded-2xl text-xs font-bold text-green-400 hover:bg-green-500/10 transition-all uppercase tracking-widest flex items-center justify-center gap-2">
-              {loading ? <RefreshCcw size={14} className="animate-spin" /> : <Brain size={14} />} {getTranslation('update_analysis', language)}
+              {loading ? <RefreshCcw size={14} className="animate-spin" /> : <Brain size={14} />} {t('update_analysis')}
             </button>
           </div>
         </div>
