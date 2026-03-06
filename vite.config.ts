@@ -8,6 +8,14 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        proxy: {
+          '/api/catastro': {
+            target: 'https://ovc.catastro.meh.es',
+            changeOrigin: true,
+            secure: true,
+            rewrite: (path) => path.replace(/^\/api\/catastro/, ''),
+          },
+        },
       },
       plugins: [react()],
       define: {

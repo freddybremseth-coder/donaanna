@@ -1,30 +1,52 @@
+const CATASTRO_HOST = "https://ovc.catastro.meh.es";
 
-// Hjelpefunksjon: prøv direktefetch, fall tilbake på allorigins-proxy om CORS blokkerer
+/**
+ * Henter en Catastro-URL via:
+ *  1. Vite dev-proxy  (/api/catastro/...)  – fungerer under `npm run dev`
+ *  2. allorigins.win  – fungerer i produksjon
+ *  3. corsproxy.io    – reservefallback
+ * Kaster en lesbar feil om alle alternativer svikter.
+ */
 const catastroFetch = async (url: string): Promise<string> => {
-  // 1) Direkte (fungerer i server-side / Electron / noen nettlesere uten CORS-blokk)
+  const path = url.replace(CATASTRO_HOST, "");
+
+  // 1) Vite dev-proxy
   try {
-    const r = await fetch(url);
+    const r = await fetch(`/api/catastro${path}`);
     if (r.ok) {
       const text = await r.text();
-      // Sanity-sjekk: XML-svar inneholder alltid <?xml eller <
       if (text.trim().startsWith("<")) return text;
     }
-  } catch (_) { /* CORS-feil — prøv proxy */ }
+  } catch (_) { /* ikke i dev-modus */ }
 
-  // 2) allorigins.win – returnerer råinnholdet uten CORS-restriksjon
-  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-  const r2 = await fetch(proxyUrl);
-  if (!r2.ok) throw new Error(`Proxy HTTP ${r2.status}`);
-  return r2.text();
+  // 2) allorigins.win
+  try {
+    const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
+    if (r.ok) {
+      const text = await r.text();
+      if (text.trim().startsWith("<")) return text;
+      throw new Error(`Ugyldig svar fra allorigins: ${text.slice(0, 120)}`);
+    }
+    throw new Error(`allorigins HTTP ${r.status}`);
+  } catch (e: any) {
+    if (!e.message?.startsWith("allorigins") && !e.message?.startsWith("Ugyldig")) throw e;
+    console.warn("[catastroFetch] allorigins feilet:", e.message);
+  }
+
+  // 3) corsproxy.io
+  const r3 = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+  if (!r3.ok) throw new Error(`Catastro-proxy feilet (HTTP ${r3.status}). Prøv igjen.`);
+  const text3 = await r3.text();
+  if (!text3.trim().startsWith("<"))
+    throw new Error(`Uventet svar fra proxy: ${text3.slice(0, 120)}`);
+  return text3;
 };
 
 export class SedecService {
   private static WFS_URL =
     "https://ovc.catastro.minhafp.es/ovcservweb/ovcwfs/ServidorWFS.aspx";
-  private static ALPHA_URL =
-    "https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_DNPPP";
   private static ALPHA_CODES_URL =
-    "https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroCodigos.asmx/Consulta_DNPPP_Codigos";
+    `${CATASTRO_HOST}/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroCodigos.asmx/Consulta_DNPPP_Codigos`;
 
   async getParcelPolygon(
     refCat: string,
@@ -39,13 +61,13 @@ export class SedecService {
         SRSNAME: "EPSG:4326",
       });
       const r = await fetch(`${SedecService.WFS_URL}?${params}`);
-      if (!r.ok) throw new Error("WFS error");
+      if (!r.ok) throw new Error(`WFS HTTP ${r.status}`);
       const xml = await r.text();
       const coords = this.parseGmlPolygon(xml);
       if (coords && coords.length > 2) return coords;
-      throw new Error("No coords");
+      throw new Error("Ingen koordinater i WFS-svar");
     } catch (e) {
-      console.warn("WFS polygon failed:", e);
+      console.warn("[getParcelPolygon]", e);
       if (fallbackCoords) {
         const o = 0.0003, [lat, lon] = fallbackCoords;
         return [
@@ -58,45 +80,30 @@ export class SedecService {
     }
   }
 
-  async getAlphanumericData(
-    provincia: string, municipio: string,
-    poligono: string, parcela: string
-  ): Promise<any | null> {
-    const params = new URLSearchParams({ Provincia: provincia, Municipio: municipio, Poligono: poligono, Parcela: parcela });
-    return this._fetchAndParse(`${SedecService.ALPHA_URL}?${params}`);
-  }
-
   async getAlphanumericDataByCode(
     provinciaCod: string, municipioCod: string,
     poligono: string, parcela: string
-  ): Promise<any | null> {
+  ): Promise<any> {
     const params = new URLSearchParams({
       CodigoProvincia: provinciaCod,
       CodigoMunicipio: municipioCod,
       Poligono: poligono,
       Parcela: parcela,
     });
-    return this._fetchAndParse(`${SedecService.ALPHA_CODES_URL}?${params}`);
-  }
+    const url = `${SedecService.ALPHA_CODES_URL}?${params}`;
+    const xmlText = await catastroFetch(url);
+    console.log("[Catastro XML]", xmlText.slice(0, 600));
 
-  private async _fetchAndParse(url: string): Promise<any | null> {
-    try {
-      const xmlText = await catastroFetch(url);
-      console.log("[Catastro XML preview]", xmlText.slice(0, 500));
-
-      // Sjekk om API returnerte en feilmelding
-      if (xmlText.includes("<err>") || xmlText.includes("<faultstring>")) {
-        const errMatch = xmlText.match(/<des>(.*?)<\/des>/i) || xmlText.match(/<faultstring>(.*?)<\/faultstring>/i);
-        throw new Error(`Catastro API-feil: ${errMatch?.[1] || "ukjent"}`);
-      }
-
-      const data = this.parseAlphanumericXml(xmlText);
-      if (!data.cadastralId) throw new Error("Fant ikke Referencia Catastral i svaret.");
-      return data;
-    } catch (error) {
-      console.error("Catastro fetch/parse failed:", error);
-      return null;
+    if (xmlText.includes("<err>") || xmlText.includes("<faultstring>")) {
+      const m = xmlText.match(/<des>(.*?)<\/des>/i)
+               || xmlText.match(/<faultstring>(.*?)<\/faultstring>/i);
+      throw new Error(`Catastro: ${m?.[1] || "feil fra API"}`);
     }
+
+    const data = this.parseAlphanumericXml(xmlText);
+    if (!data.cadastralId)
+      throw new Error("Fant ikke Referencia Catastral i svaret. Sjekk Polígono/Parcela.");
+    return data;
   }
 
   private parseAlphanumericXml(xml: string): any {
@@ -104,23 +111,16 @@ export class SedecService {
     const xmlDoc = parser.parseFromString(xml, "text/xml");
     const result: any = {};
 
-    // Referencia Catastral
-    const allPc1 = xmlDoc.querySelectorAll("pc1");
-    const allPc2 = xmlDoc.querySelectorAll("pc2");
-    if (allPc1.length > 0 && allPc2.length > 0) {
-      const id = (allPc1[0].textContent || "").trim() + (allPc2[0].textContent || "").trim();
-      if (id.length >= 14) result.cadastralId = id;
-    }
+    const pc1 = xmlDoc.querySelector("pc1")?.textContent?.trim() ?? "";
+    const pc2 = xmlDoc.querySelector("pc2")?.textContent?.trim() ?? "";
+    const id = pc1 + pc2;
+    if (id.length >= 14) result.cadastralId = id;
 
-    // Areal i m²
     const sfe = xmlDoc.querySelector("sfe");
     if (sfe?.textContent) result.areaSqm = parseInt(sfe.textContent.trim(), 10) || 0;
 
-    // Bruksklasse
     result.landUse = xmlDoc.querySelector("luso")?.textContent?.trim() || "Ukjent";
-
-    // Adresse
-    result.address = xmlDoc.querySelector("ldt")?.textContent?.trim() || "Ingen adresse";
+    result.address  = xmlDoc.querySelector("ldt")?.textContent?.trim()  || "Ingen adresse";
 
     return result;
   }

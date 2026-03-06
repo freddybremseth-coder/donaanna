@@ -250,7 +250,6 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
     drawingLayerRef.current.clearLayers();
     try {
       const data = await sedecService.getAlphanumericDataByCode(manualProvCod, manualMunCod, manualPol, manualPar);
-      if (!data || !data.cadastralId) throw new Error("Ugyldig respons fra Catastro. Sjekk kodene.");
       const polygon = await sedecService.getParcelPolygon(data.cadastralId);
       if (!polygon) throw new Error("Fant data, men kunne ikke hente eiendommens grenser.");
       const polygonForTurf = turf.polygon([polygon.map(p => [p[1], p[0]])]);
@@ -306,7 +305,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
         const data = await sedecService.getAlphanumericDataByCode(
           lastLookupParams.provCod, lastLookupParams.munCod, lastLookupParams.pol, num
         );
-        if (!data?.cadastralId) continue;
+        if (!data.cadastralId) continue;
         const polygon = await sedecService.getParcelPolygon(data.cadastralId);
         let areaSqm = data.areaSqm || 0;
         if (areaSqm <= 0 && polygon && polygon.length > 2) {
