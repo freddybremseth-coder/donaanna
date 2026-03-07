@@ -121,6 +121,12 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
   useEffect(() => { isMapClickModeRef.current = isMapClickMode; }, [isMapClickMode]);
   useEffect(() => { isAnalyzingRef.current = isAnalyzing; }, [isAnalyzing]);
 
+  // Change cursor via Leaflet API — never touch the container className
+  useEffect(() => {
+    if (!mapRef.current) return;
+    mapRef.current.getContainer().style.cursor = isMapClickMode ? 'crosshair' : '';
+  }, [isMapClickMode]);
+
   // Map click → look up parcel by coordinates
   useEffect(() => {
     if (!mapRef.current) return;
@@ -567,7 +573,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
     <div className="h-[calc(100vh-140px)] md:h-[calc(100vh-120px)] relative overflow-hidden flex flex-col lg:flex-row gap-4">
       {/* Map Container */}
       <div className="flex-1 relative rounded-[1.5rem] md:rounded-[2rem] overflow-hidden border border-white/10 shadow-inner min-h-[400px]">
-        <div ref={mapContainerRef} className={`w-full h-full z-0${isMapClickMode ? ' click-mode' : ''}`} />
+        <div ref={mapContainerRef} className="w-full h-full z-0" />
 
         {/* TOP CONTROLS */}
         <div className="absolute top-4 left-4 right-4 z-[1000] flex gap-2 pointer-events-none">
@@ -895,7 +901,6 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
         .parcel-tooltip { background: rgba(0,0,0,0.85); border: 1px solid rgba(34,197,94,0.3); border-radius: 8px; padding: 4px 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); color: #22c55e; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; }
         .gps-marker { width: 20px; height: 20px; background-color: #4ade80; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 10px #4ade80; }
         .leaflet-container { background: #0a0a0b !important; }
-        .click-mode .leaflet-container { cursor: crosshair !important; }
       `}</style>
     </div>
   );
