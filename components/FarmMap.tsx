@@ -204,7 +204,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
     if (isCadastreLayerActive) {
       if (!cadastreWmsRef.current) {
         cadastreWmsRef.current = L.tileLayer.wms('/api/catastro/Cartografia/WMS/ServidorWMS.aspx', {
-          layers: 'CP.CadastralParcel',
+          layers: 'PARCELA',
           format: 'image/png',
           transparent: true,
           version: '1.1.1',
