@@ -118,6 +118,7 @@ export class SedecService {
     const params = new URLSearchParams({
       CodigoProvincia: provinciaCod,
       CodigoMunicipio: municipioCod,
+      CodigoMunicipioINE: provinciaCod + municipioCod,
       Poligono: poligono,
       Parcela: parcela,
     });
