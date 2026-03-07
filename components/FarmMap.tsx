@@ -3,7 +3,7 @@ import {
   Search, MapPin, Layers, X, CheckCircle2, Loader2, Brain, Undo2, Save,
   ChevronRight, Trash2, Globe, Locate, Building, Zap, Droplets,
   Eye, EyeOff, Navigation, Target, Radar, SearchCode, ArrowRight,
-  ShieldCheck, AlertTriangle, Map as MapTypeIcon
+  ShieldCheck, AlertTriangle, Map as MapTypeIcon, MousePointerClick
 } from 'lucide-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { Parcel, Language } from '../types';
@@ -54,6 +54,10 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
   const [isGPSLocating, setIsGPSLocating] = useState(false);
   const [analyzedDetails, setAnalyzedDetails] = useState<CadastralDetails | null>(null);
   const [geofenceAlert, setGeofenceAlert] = useState<{ message: string; type: 'inside' | 'outside' } | null>(null);
+
+  const [isMapClickMode, setIsMapClickMode] = useState(false);
+  const isMapClickModeRef = useRef(false);
+  const isAnalyzingRef = useRef(false);
 
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifyStatus, setVerifyStatus] = useState<{success?: boolean, message?: string} | null>(null);
@@ -111,6 +115,82 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
       resizeObserver.observe(mapContainerRef.current);
       return () => resizeObserver.disconnect();
     }
+  }, []);
+
+  // Keep refs in sync so the map click closure sees current values
+  useEffect(() => { isMapClickModeRef.current = isMapClickMode; }, [isMapClickMode]);
+  useEffect(() => { isAnalyzingRef.current = isAnalyzing; }, [isAnalyzing]);
+
+  // Map click → look up parcel by coordinates
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const handler = async (e: L.LeafletMouseEvent) => {
+      if (!isMapClickModeRef.current || isAnalyzingRef.current) return;
+      const { lat, lng } = e.latlng;
+      setIsAnalyzing(true);
+      setAnalyzedDetails(null);
+      drawingLayerRef.current.clearLayers();
+      try {
+        setAnalysisStatus('Henter matrikkelreferanse...');
+        const { rc, address } = await sedecService.getParcelRC(lat, lng);
+
+        setAnalysisStatus('Henter grenser...');
+        const polygon = await sedecService.getParcelPolygon(rc, [lat, lng]);
+
+        let areaSqm = 0;
+        let landUse = 'Ukjent';
+        let finalLat = lat, finalLon = lng;
+
+        if (polygon && polygon.length > 2) {
+          try {
+            const tp = turf.polygon([polygon.map(p => [p[1], p[0]])]);
+            areaSqm = Math.round(turf.area(tp));
+            const c = turf.centerOfMass(tp);
+            finalLat = c.geometry.coordinates[1];
+            finalLon = c.geometry.coordinates[0];
+          } catch { /* keep defaults */ }
+        }
+
+        // Decode rural RC (letter at position 5) → get land use
+        if (/^[0-9]{5}[A-Z]/.test(rc)) {
+          try {
+            const data = await sedecService.getAlphanumericDataByCode(
+              rc.slice(0, 2),
+              String(parseInt(rc.slice(2, 5), 10)),
+              String(parseInt(rc.slice(6, 9), 10)),
+              String(parseInt(rc.slice(9, 14), 10)),
+            );
+            if (data.areaSqm > 0) areaSqm = data.areaSqm;
+            if (data.landUse && data.landUse !== 'Ukjent') landUse = data.landUse;
+          } catch { /* land use stays unknown */ }
+        }
+
+        if (polygon && mapRef.current) {
+          L.polygon(polygon, { color: '#f59e0b', fillOpacity: 0.35, weight: 3 })
+            .addTo(drawingLayerRef.current);
+          setDrawingCoords(polygon);
+          mapRef.current.fitBounds(L.polygon(polygon).getBounds(), { padding: [80, 80] });
+        }
+
+        const details: CadastralDetails = {
+          cadastralId: rc, areaSqm, address,
+          municipality: address.split(' ').filter(Boolean).slice(-2, -1)[0] || 'Ukjent',
+          latitude: finalLat, longitude: finalLon,
+          landUse, description: null, soilQuality: null, treeCount: 0,
+        };
+        setAnalyzedDetails(details);
+        setEditName(address.split(',')[0] || 'Ny parsell');
+        setEditTreeCount(0);
+        setEditVariety('Picual');
+      } catch (err: any) {
+        alert(err.message || 'Fant ikke eiendom på dette stedet.');
+      } finally {
+        setIsAnalyzing(false);
+        setAnalysisStatus('');
+      }
+    };
+    mapRef.current.on('click', handler);
+    return () => { mapRef.current?.off('click', handler); };
   }, []);
 
   useEffect(() => {
@@ -487,7 +567,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
     <div className="h-[calc(100vh-140px)] md:h-[calc(100vh-120px)] relative overflow-hidden flex flex-col lg:flex-row gap-4">
       {/* Map Container */}
       <div className="flex-1 relative rounded-[1.5rem] md:rounded-[2rem] overflow-hidden border border-white/10 shadow-inner min-h-[400px]">
-        <div ref={mapContainerRef} className="w-full h-full z-0" />
+        <div ref={mapContainerRef} className={`w-full h-full z-0${isMapClickMode ? ' click-mode' : ''}`} />
 
         {/* TOP CONTROLS */}
         <div className="absolute top-4 left-4 right-4 z-[1000] flex gap-2 pointer-events-none">
@@ -521,6 +601,13 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
 
         {/* GPS BUTTON & GEOFENCE ALERT */}
         <div className="absolute top-20 right-4 z-[1000] flex flex-col items-end gap-2">
+          <button
+            onClick={() => setIsMapClickMode(v => !v)}
+            title={isMapClickMode ? 'Deaktiver klikk-modus' : 'Klikk på kart for å finne parsell'}
+            className={`p-4 rounded-2xl glass border shadow-2xl transition-all active:scale-90 ${isMapClickMode ? 'bg-amber-500 border-amber-400 text-black' : 'bg-black/80 border-white/20 text-slate-300 hover:text-white'}`}
+          >
+            <MousePointerClick size={24} />
+          </button>
           <button
             onClick={handleLocateAndSync}
             disabled={isGPSLocating || isAnalyzing}
@@ -631,6 +718,12 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
           )}
         </div>
 
+        {isMapClickMode && !isAnalyzing && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000] glass bg-amber-500/20 px-6 py-3 rounded-full border border-amber-500/50 flex items-center gap-3 shadow-2xl pointer-events-none">
+            <MousePointerClick size={16} className="text-amber-400" />
+            <span className="text-[10px] font-bold text-amber-300 uppercase tracking-[0.2em]">Klikk på en parsell for å laste den inn</span>
+          </div>
+        )}
         {isAnalyzing && !showManualEntry && (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000] glass bg-black/90 px-6 py-3 rounded-full border border-green-500/40 flex items-center gap-3 shadow-2xl">
             <Loader2 size={16} className="animate-spin text-green-400" />
@@ -802,6 +895,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
         .parcel-tooltip { background: rgba(0,0,0,0.85); border: 1px solid rgba(34,197,94,0.3); border-radius: 8px; padding: 4px 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); color: #22c55e; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; }
         .gps-marker { width: 20px; height: 20px; background-color: #4ade80; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 10px #4ade80; }
         .leaflet-container { background: #0a0a0b !important; }
+        .click-mode .leaflet-container { cursor: crosshair !important; }
       `}</style>
     </div>
   );

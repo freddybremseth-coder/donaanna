@@ -113,6 +113,19 @@ export class SedecService {
     }
   }
 
+  /** Lookup cadastral reference (RC) from WGS-84 coordinates */
+  async getParcelRC(lat: number, lon: number): Promise<{ rc: string; address: string }> {
+    const url = `${CATASTRO_HOST}/ovcservweb/OVCSWLocalizacionRC/OVCCoordenadas.asmx/Consulta_RCCOOR` +
+      `?SRS=EPSG:4326&Coordenada_X=${lon.toFixed(7)}&Coordenada_Y=${lat.toFixed(7)}`;
+    const xml = await catastroFetch(url);
+    const doc = new DOMParser().parseFromString(xml, 'text/xml');
+    const get = (tag: string) =>
+      doc.getElementsByTagNameNS('*', tag)[0]?.textContent?.trim() ?? '';
+    const rc = get('pc1') + get('pc2');
+    if (rc.length < 14) throw new Error(get('des') || 'Ingen eiendom funnet på dette stedet');
+    return { rc, address: get('ldt') };
+  }
+
   async searchMunicipalities(
     provCode: string, namePrefix: string, provLabel: string
   ): Promise<import('../data/es_municipalities').Municipality[]> {
