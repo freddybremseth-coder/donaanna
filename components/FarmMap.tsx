@@ -37,7 +37,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
   const [manualPol, setManualPol] = useState('9');
   const [manualPar, setManualPar] = useState('215');
   const [manualProvCod, setManualProvCod] = useState('03');
-  const [manualMunCod, setManualMunCod] = useState('023');
+  const [manualMunCod, setManualMunCod] = useState('040');
 
   const [munSearchText, setMunSearchText] = useState('Biar, Alicante');
   const [munSuggestions, setMunSuggestions] = useState<Municipality[]>([]);
@@ -231,6 +231,26 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
     setDrawingCoords([]);
     drawingLayerRef.current.clearLayers();
     try {
+      // Prøv å parse "Kommunenavn [, Provins], pol X, par Y" og bruk Catastro API direkte
+      const polParMatch = query.match(/^(.+?),\s*pol[ígono]*\.?\s*0*(\d+)[,\s]+par[cela]*\.?\s*0*(\d+)/i);
+      if (polParMatch) {
+        const prefix = polParMatch[1];
+        const pol = polParMatch[2];
+        const par = polParMatch[3];
+        const commaIdx = prefix.indexOf(',');
+        const munName = (commaIdx >= 0 ? prefix.slice(0, commaIdx) : prefix).trim().toLowerCase();
+        const provName = commaIdx >= 0 ? prefix.slice(commaIdx + 1).trim().toLowerCase() : '';
+        const mun = MUNICIPALITIES.find(m =>
+          m.municipalityName.toLowerCase().includes(munName) &&
+          (!provName || m.provinceName.toLowerCase().includes(provName))
+        );
+        if (mun) {
+          setAnalysisStatus('Henter data fra Catastro...');
+          await doDirectSearch(mun.provinceCode, mun.municipalityCode, pol, par);
+          return;
+        }
+      }
+      // Fallback til Gemini AI-søk
       const details = await geminiService.analyzeParcelCadastre(query.trim().toUpperCase(), language);
       await processCadastralDetails(details);
     } catch (err: any) {
@@ -239,6 +259,28 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
       setIsAnalyzing(false);
       setAnalysisStatus('');
     }
+  };
+
+  const doDirectSearch = async (provCod: string, munCod: string, pol: string, par: string) => {
+    const data = await sedecService.getAlphanumericDataByCode(provCod, munCod, pol, par);
+    const polygon = await sedecService.getParcelPolygon(data.cadastralId);
+    if (!polygon) throw new Error("Fant data, men kunne ikke hente eiendommens grenser.");
+    const polygonForTurf = turf.polygon([polygon.map(p => [p[1], p[0]])]);
+    const center = turf.centerOfMass(polygonForTurf);
+    const details: CadastralDetails = {
+      cadastralId: data.cadastralId,
+      areaSqm: data.areaSqm,
+      address: data.address,
+      municipality: data.address.split(',')[0] || 'Ukjent',
+      latitude: center.geometry.coordinates[1],
+      longitude: center.geometry.coordinates[0],
+      landUse: data.landUse,
+      description: null, soilQuality: null, treeCount: 0
+    };
+    await processCadastralDetails(details, polygon);
+    setLastLookupParams({ provCod, munCod, pol });
+    setRelatedResults([]);
+    setRelatedInput('');
   };
 
   const performDirectCadastralSearch = async (e: React.FormEvent) => {
@@ -250,25 +292,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
     setDrawingCoords([]);
     drawingLayerRef.current.clearLayers();
     try {
-      const data = await sedecService.getAlphanumericDataByCode(manualProvCod, manualMunCod, manualPol, manualPar);
-      const polygon = await sedecService.getParcelPolygon(data.cadastralId);
-      if (!polygon) throw new Error("Fant data, men kunne ikke hente eiendommens grenser.");
-      const polygonForTurf = turf.polygon([polygon.map(p => [p[1], p[0]])]);
-      const center = turf.centerOfMass(polygonForTurf);
-      const details: CadastralDetails = {
-        cadastralId: data.cadastralId,
-        areaSqm: data.areaSqm,
-        address: data.address,
-        municipality: data.address.split(',')[0] || 'Ukjent',
-        latitude: center.geometry.coordinates[1],
-        longitude: center.geometry.coordinates[0],
-        landUse: data.landUse,
-        description: null, soilQuality: null, treeCount: 0
-      };
-      await processCadastralDetails(details, polygon);
-      setLastLookupParams({ provCod: manualProvCod, munCod: manualMunCod, pol: manualPol });
-      setRelatedResults([]);
-      setRelatedInput('');
+      await doDirectSearch(manualProvCod, manualMunCod, manualPol, manualPar);
     } catch (err: any) {
       alert(err.message || "En feil oppstod under direkte søk.");
     } finally {

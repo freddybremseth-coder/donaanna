@@ -142,7 +142,7 @@ export class GeminiService {
         INSTRUKSER:
         1. Bruk Google Search til å finne offisielle matrikkeldata fra Sede Electrónica del Catastro.
         2. Identifiser "Referencia Catastral" (20 tegn) og arealet i m2.
-        3. Hvis forespørselen er for Biar, Alicante, starter referansen ofte med 03043A.
+        3. Hvis forespørselen er for Biar, Alicante, starter referansen ofte med 03040A.
         4. Returner nøyaktige GPS-koordinater (lat/lon) for senteret av parsellen.
 
         Returner KUN JSON:
