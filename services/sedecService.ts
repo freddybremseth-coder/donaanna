@@ -116,15 +116,16 @@ export class SedecService {
   async searchMunicipalities(
     provCode: string, namePrefix: string, provLabel: string
   ): Promise<import('../data/es_municipalities').Municipality[]> {
-    // Catastro expects uppercase municipality names
+    // ConsultaMunicipioCodigos requires all 4 params; CodigoMunicipio+Ine can be empty
     const url = `${CATASTRO_HOST}/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroCodigos.asmx/ConsultaMunicipioCodigos` +
-      `?CodigoProvincia=${provCode}&NombreMunicipio=${encodeURIComponent(namePrefix.toUpperCase())}`;
+      `?CodigoProvincia=${provCode}&CodigoMunicipio=&CodigoMunicipioIne=&NombreMunicipio=${encodeURIComponent(namePrefix.toUpperCase())}`;
     const xml = await catastroFetch(url);
     const doc = new DOMParser().parseFromString(xml, 'text/xml');
-    return Array.from(doc.querySelectorAll('muni locat')).map(el => ({
-      provinceCode: el.querySelector('nump')?.textContent?.trim() ?? provCode,
+    // Response: <muni><nm>BIAR</nm><locat><cd>3</cd><cmc>43</cmc></locat>...
+    return Array.from(doc.querySelectorAll('muni')).map(el => ({
+      provinceCode: provCode,
       provinceName: provLabel,
-      municipalityCode: el.querySelector('cmund')?.textContent?.trim() ?? '',
+      municipalityCode: el.querySelector('cmc')?.textContent?.trim() ?? '',
       municipalityName: el.querySelector('nm')?.textContent?.trim() ?? '',
     })).filter(m => m.municipalityCode);
   }
@@ -136,7 +137,7 @@ export class SedecService {
     const params = new URLSearchParams({
       CodigoProvincia: provinciaCod,
       CodigoMunicipio: municipioCod,
-      CodigoMunicipioINE: provinciaCod + municipioCod,
+      CodigoMunicipioINE: municipioCod,  // Catastro uses its own sequential codes, not INE province+mun
       Poligono: poligono,
       Parcela: parcela,
     });

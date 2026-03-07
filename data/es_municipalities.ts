@@ -7,15 +7,22 @@ export interface Municipality {
 }
 
 export const MUNICIPALITIES: Municipality[] = [
-  // Alicante (03)
-  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "014", municipalityName: "Alicante/Alacant" },
-  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "040", municipalityName: "Biar" },
-  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "023", municipalityName: "Beneixama" },
-  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "032", municipalityName: "Benidorm" },
-  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "063", municipalityName: "Elche/Elx" },
+  // Alicante (03) — Catastro-koder fra ConsultaMunicipioCodigos (IKKE INE-koder)
+  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "900", municipalityName: "Alicante/Alacant" },
+  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "43", municipalityName: "Biar" },
+  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "23", municipalityName: "Beneixama" },
+  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "31", municipalityName: "Benidorm" },
+  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "65", municipalityName: "Elche/Elx" },
   { provinceCode: "03", provinceName: "Alicante", municipalityCode: "133", municipalityName: "Torrevieja" },
-  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "018", municipalityName: "Altea" },
-  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "053", municipalityName: "Cocentaina" },
+  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "18", municipalityName: "Altea" },
+  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "56", municipalityName: "Cocentaina" },
+  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "66", municipalityName: "Elda" },
+  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "9", municipalityName: "Alcoy/Alcoi" },
+  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "99", municipalityName: "Orihuela" },
+  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "104", municipalityName: "Petrer" },
+  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "123", municipalityName: "Sax" },
+  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "140", municipalityName: "Villena" },
+  { provinceCode: "03", provinceName: "Alicante", municipalityCode: "21", municipalityName: "Banyeres de Mariola" },
 
 
   // Murcia (30)
