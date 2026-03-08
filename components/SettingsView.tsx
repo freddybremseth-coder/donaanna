@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Save, MapPin, Globe, CheckCircle2, Building2, Key, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { Save, MapPin, Globe, CheckCircle2, Building2, Key, Eye, EyeOff, ExternalLink, Crosshair } from 'lucide-react';
 import { useTranslation } from '../services/i18nService';
 import { Language } from '../types';
 
@@ -14,6 +14,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange 
   const [settings, setSettings] = useState({
     farmName: 'My Olive Grove',
     farmAddress: 'Tuscany, Italy',
+    farmLat: '',
+    farmLon: '',
     language: language,
     currency: 'EUR'
   });
@@ -128,9 +130,59 @@ const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange 
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">{t('address_label')}</label>
               <div className="relative">
-                <MapPin className="..." size={18} />
-                <input type="text" className="..." value={settings.farmAddress} onChange={e => setSettings({...settings, farmAddress: e.target.value})} />
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                <input type="text" className="w-full bg-black/50 border border-white/10 rounded-2xl pl-11 pr-5 py-4 text-sm text-white outline-none focus:border-green-500/50" value={settings.farmAddress} onChange={e => setSettings({...settings, farmAddress: e.target.value})} />
               </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Gårds-koordinater (for værvarsling)</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!navigator.geolocation) return;
+                    navigator.geolocation.getCurrentPosition(pos => {
+                      setSettings(s => ({
+                        ...s,
+                        farmLat: pos.coords.latitude.toFixed(6),
+                        farmLon: pos.coords.longitude.toFixed(6),
+                      }));
+                    });
+                  }}
+                  className="flex items-center gap-1 text-[10px] text-green-400 hover:text-green-300 font-bold"
+                >
+                  <Crosshair size={12} /> Bruk GPS
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[9px] text-slate-600 uppercase font-bold ml-1 mb-1 block">Breddegrad (lat)</label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    placeholder="38.6294"
+                    className="w-full bg-black/50 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-green-500/50 font-mono"
+                    value={settings.farmLat}
+                    onChange={e => setSettings({...settings, farmLat: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="text-[9px] text-slate-600 uppercase font-bold ml-1 mb-1 block">Lengdegrad (lon)</label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    placeholder="-0.7667"
+                    className="w-full bg-black/50 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-green-500/50 font-mono"
+                    value={settings.farmLon}
+                    onChange={e => setSettings({...settings, farmLon: e.target.value})}
+                  />
+                </div>
+              </div>
+              {settings.farmLat && settings.farmLon && (
+                <p className="text-[10px] text-green-400 mt-1 ml-1">
+                  ✓ Koordinater satt · Brukes som standard i værvarslingen
+                </p>
+              )}
             </div>
           </div>
         </div>
