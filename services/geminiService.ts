@@ -190,17 +190,42 @@ export class GeminiService {
     }
   }
 
-  async adjustRecipe(currentRecipe: Partial<Recipe>, prompt: string, lang: string = 'no'): Promise<Partial<Recipe>> {
+  async adjustRecipe(currentRecipe: Partial<Recipe>, prompt: string, lang: string = 'no', flavorTarget?: string): Promise<Partial<Recipe>> {
     const ai = this.getAI();
+
+    const flavorContext: Record<string, string> = {
+      mild:      'Mild og balansert. Passer for supermarked og massemarked globalt. Klassisk smak uten dominerende urter.',
+      syrlig:    'Syrlig/acidic profil. Passer for italienske og spanske antipasti-markeder. Eddik, sitron og laktosyre fremheves.',
+      frisk:     'Frisk og lett. Passer for premium-markeder i Skandinavia og Benelux. Lette urter som dill, persille, sitron.',
+      krydret:   'Krydret/spicy. Passer for arabiske, latinamerikanske og asiatiske markeder. Chilli, paprika, hvitløk fremheves.',
+      sterk:     'Sterk og intens. Passer for spesialbutikker og foodie-markeder. Rosmarin, timian, hvitløk, pepper dominerer.',
+      middelhav: 'Klassisk middelhavsstil. Passer for gourmetrestauranter og delicatessen. Olivenolje, rosmarin, timian, laurbær.',
+    };
+    const marketNote = flavorTarget && flavorContext[flavorTarget]
+      ? `\n\nMARKEDSMÅL: ${flavorContext[flavorTarget]}`
+      : '';
+
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: `Juster denne olivenoppskriften: ${JSON.stringify(currentRecipe)} basert på: "${prompt}". Svar i JSON.`,
+      contents: `Du er en ekspert på produksjon av bordoliven og matvaresikkerhet med 20 års erfaring fra Spania og Italia.
+
+Juster denne oppskriften for bordoliven basert på brukerens ønske.
+Alle mengder skal være per 1 liter saltlake/marinade (standardisert basis).
+
+Nåværende oppskrift: ${JSON.stringify(currentRecipe)}
+
+Brukerens ønske: "${prompt}"${marketNote}
+
+Returner justert oppskrift med eksakte mengder. Tenk på balanse mellom salt, syre, fett og aromater.
+Svar i JSON.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
             name: { type: Type.STRING },
+            description: { type: Type.STRING },
+            flavorProfile: { type: Type.STRING },
             ingredients: {
               type: Type.ARRAY,
               items: {
@@ -209,15 +234,62 @@ export class GeminiService {
                   name: { type: Type.STRING },
                   amount: { type: Type.STRING },
                   unit: { type: Type.STRING }
-                }
+                },
+                required: ['name', 'amount', 'unit']
               }
             },
-            notes: { type: Type.STRING }
+            notes: { type: Type.STRING },
+            readyAfterDays: { type: Type.NUMBER },
           }
         }
       }
     });
     return JSON.parse(response.text || "{}");
+  }
+
+  async suggestIngredientAmount(
+    ingredientName: string,
+    currentIngredients: Ingredient[],
+    flavorTarget: string,
+    batchKg: number = 100
+  ): Promise<{ amount: string; unit: string; rationale: string }> {
+    const ai = this.getAI();
+
+    const flavorContext: Record<string, string> = {
+      mild:      'mild og balansert smak',
+      syrlig:    'syrlig/acidic profil med eddik og sitron',
+      frisk:     'frisk og lett med lette urter',
+      krydret:   'krydret/spicy med chilli og paprika',
+      sterk:     'sterk og intens med dominerende urter',
+      middelhav: 'klassisk middelhavsstil med olivenolje og urter',
+    };
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `Du er ekspert på produksjon av bordoliven med 20 års erfaring.
+
+Nåværende oppskrift (per 1 liter saltlake): ${JSON.stringify(currentIngredients)}
+Batch-størrelse: ${batchKg} kg oliven
+Ønsket smaksprofil: ${flavorContext[flavorTarget] || flavorTarget}
+Ingredient som skal legges til: ${ingredientName}
+
+Foreslå eksakt mengde av "${ingredientName}" per 1 liter saltlake for å oppnå god smaksbalanse.
+Husk matvaresikkerhet og typiske mengder i profesjonell olivenproduksjon.
+Gi en kort norsk forklaring på hvorfor denne mengden er riktig.`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            amount: { type: Type.STRING },
+            unit:   { type: Type.STRING },
+            rationale: { type: Type.STRING }
+          },
+          required: ['amount', 'unit', 'rationale']
+        }
+      }
+    });
+    return JSON.parse(response.text || '{"amount":"1","unit":"stk","rationale":""}');
   }
 
   async analyzeComprehensive(imagesBase64: string[], lang: string): Promise<ComprehensiveAnalysisResult> {

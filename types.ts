@@ -98,6 +98,8 @@ export interface Batch {
   id: string;
   parcelId: string;
   recipeId?: string;
+  recipeName?: string;           // name of the recipe used at batch creation
+  recipeSnapshot?: Ingredient[]; // exact ingredient list (for content declaration)
   oliveType?: string;
   harvestDate: string;
   weight: number;

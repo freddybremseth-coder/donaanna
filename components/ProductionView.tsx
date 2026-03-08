@@ -7,7 +7,8 @@ import {
   Droplets, Thermometer, FlaskConical, Scale,
   Loader2, Trash2, CheckCircle2, ShoppingCart,
   ChevronRight, Search, Bell, Archive, RefreshCcw,
-  ClipboardList, MapPin, Award, Timer, Filter, Wheat
+  ClipboardList, MapPin, Award, Timer, Filter, Wheat,
+  FileText, Zap, Tag, ArrowRight
 } from 'lucide-react';
 import { Batch, Parcel, Recipe, Ingredient, TableOliveStage, Language, HarvestRecord, SalesChannel } from '../types';
 import { geminiService } from '../services/geminiService';
@@ -101,28 +102,22 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
 
   const [batches, setBatches] = useState<Batch[]>([
     {
-      id: 'B001',
-      parcelId: 'p1',
-      recipeId: 'R001',
-      yieldType: 'Table',
-      quality: 'Premium',
-      weight: 150,
-      harvestDate: '2023-10-28',
-      currentStage: 'MARINERING',
-      status: 'ACTIVE',
+      id: 'B001', parcelId: 'p1', recipeId: 'R001', yieldType: 'Table', quality: 'Premium', weight: 150,
+      harvestDate: '2023-10-28', currentStage: 'MARINERING', status: 'ACTIVE',
+      recipeName: 'Klassisk Biar-Lake (10% salt)',
+      recipeSnapshot: [
+        { name: 'Vann', amount: '1', unit: 'liter' },
+        { name: 'Havsalt (grovt)', amount: '100', unit: 'g' },
+        { name: 'Hvitløk', amount: '4', unit: 'fedd' },
+        { name: 'Fersk rosmarin', amount: '2', unit: 'kvister' },
+        { name: 'Laurbærblad', amount: '2', unit: 'stk' },
+      ],
       logs: [{ stage: 'PLUKKING', startDate: '2023-10-28', notes: 'Håndplukket ved optimal modenhet.' }, { stage: 'LAKE', startDate: '2023-10-29', notes: 'Lake med 8% salt.' }],
       qualityMetrics: { acidity: 0.2, peroxide: 4, k232: 1.8, k270: 0.15, deltaK: 0.005, phenols: 550 },
     },
     {
-      id: 'B002',
-      parcelId: 'p2',
-      recipeId: 'R003',
-      yieldType: 'Table',
-      quality: 'Good',
-      weight: 320,
-      harvestDate: '2023-11-05',
-      currentStage: 'LAKE',
-      status: 'ACTIVE',
+      id: 'B002', parcelId: 'p2', recipeId: 'R003', yieldType: 'Table', quality: 'Good', weight: 320,
+      harvestDate: '2023-11-05', currentStage: 'LAKE', status: 'ACTIVE',
       logs: [{ stage: 'PLUKKING', startDate: '2023-11-05', notes: 'Maskinell høsting.' }],
     }
   ]);
@@ -130,39 +125,171 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
   const [mainTab, setMainTab] = useState<MainTab>('harvest');
   const [flavorFilter, setFlavorFilter] = useState<FlavorFilter>('all');
   const [recipeSearch, setRecipeSearch] = useState('');
-  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+
+  // ── Recipe modal state ────────────────────────────────────────────────────
   const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<Partial<Recipe> | null>(null);
   const [aiPrompt, setAiPrompt] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [recipeFlavorTarget, setRecipeFlavorTarget] = useState('mild');
+  const [newIngName, setNewIngName] = useState('');
+  const [aiIngLoading, setAiIngLoading] = useState<string | null>(null); // ingredient name being AI-suggested
+
+  // ── Batch modal state (2-step) ────────────────────────────────────────────
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+  const [batchStep, setBatchStep] = useState<1 | 2>(1);
   const [newBatch, setNewBatch] = useState<Partial<Batch>>({
     yieldType: 'Table', quality: 'Premium', status: 'ACTIVE', weight: 0,
     harvestDate: new Date().toISOString().split('T')[0], currentStage: 'PLUKKING',
   });
+  const [batchIngredients, setBatchIngredients] = useState<Ingredient[]>([]);
+  const [batchRecipeName, setBatchRecipeName] = useState('');
+  const [batchFlavorTarget, setBatchFlavorTarget] = useState('mild');
+  const [batchAiIngName, setBatchAiIngName] = useState('');
+  const [batchAiIngLoading, setBatchAiIngLoading] = useState<string | null>(null);
+  const [batchAiPrompt, setBatchAiPrompt] = useState('');
+  const [batchAiLoading, setBatchAiLoading] = useState(false);
+
+  // ── Content declaration modal ─────────────────────────────────────────────
+  const [viewingBatch, setViewingBatch] = useState<Batch | null>(null);
 
   const handleOpenRecipeModal = (recipe: Recipe | null = null) => {
     if (recipe) {
-      setEditingRecipe(JSON.parse(JSON.stringify(recipe))); // Deep copy to avoid state mutation issues
+      setEditingRecipe(JSON.parse(JSON.stringify(recipe)));
+      setRecipeFlavorTarget(recipe.flavorProfile || 'mild');
     } else {
-      setEditingRecipe({ name: '', description: '', flavorProfile: 'mild', ingredients: [], instructions: '', isAiGenerated: false });
+      setEditingRecipe({ name: '', description: '', flavorProfile: 'mild', ingredients: [], isAiGenerated: false, rating: 4, notes: '', isQualityAssured: false });
+      setRecipeFlavorTarget('mild');
     }
+    setAiPrompt('');
+    setNewIngName('');
     setIsRecipeModalOpen(true);
   };
-  
+
   const handleSaveRecipe = () => {
     if (!editingRecipe || !editingRecipe.name) return;
-
-    if (editingRecipe.id) { // Update existing recipe
+    if (editingRecipe.id) {
       setRecipes(recipes.map(r => r.id === editingRecipe!.id ? editingRecipe as Recipe : r));
-    } else { // Create new recipe
-      const newRecipe: Recipe = {
-        id: `R${Date.now()}`,
-        ...editingRecipe,
-      } as Recipe;
-      setRecipes([...recipes, newRecipe]);
+    } else {
+      setRecipes([...recipes, { id: `R${Date.now()}`, rating: 4, notes: '', isAiGenerated: false, isQualityAssured: false, ...editingRecipe } as Recipe]);
     }
     setIsRecipeModalOpen(false);
     setEditingRecipe(null);
+  };
+
+  // ── Recipe ingredient editor helpers ─────────────────────────────────────
+  const addIngredientRow = () => {
+    if (!newIngName.trim()) return;
+    setEditingRecipe(prev => ({ ...prev, ingredients: [...(prev?.ingredients || []), { name: newIngName.trim(), amount: '', unit: '' }] }));
+    setNewIngName('');
+  };
+
+  const updateIngredient = (idx: number, field: keyof Ingredient, value: string) => {
+    setEditingRecipe(prev => {
+      const ings = [...(prev?.ingredients || [])];
+      ings[idx] = { ...ings[idx], [field]: value };
+      return { ...prev, ingredients: ings };
+    });
+  };
+
+  const removeIngredient = (idx: number) => {
+    setEditingRecipe(prev => {
+      const ings = [...(prev?.ingredients || [])];
+      ings.splice(idx, 1);
+      return { ...prev, ingredients: ings };
+    });
+  };
+
+  const handleAiSuggestAmount = async (ingredientName: string, isForBatch = false) => {
+    const loadKey = ingredientName;
+    const currentIngredients = isForBatch ? batchIngredients : (editingRecipe?.ingredients || []);
+    if (isForBatch) setBatchAiIngLoading(loadKey);
+    else setAiIngLoading(loadKey);
+    try {
+      const suggestion = await geminiService.suggestIngredientAmount(
+        ingredientName, currentIngredients,
+        isForBatch ? batchFlavorTarget : recipeFlavorTarget,
+        newBatch.weight || 100
+      );
+      if (isForBatch) {
+        setBatchIngredients(prev => {
+          const idx = prev.findIndex(i => i.name === ingredientName && i.amount === '');
+          if (idx === -1) return [...prev, { name: ingredientName, amount: suggestion.amount, unit: suggestion.unit }];
+          const updated = [...prev];
+          updated[idx] = { ...updated[idx], amount: suggestion.amount, unit: suggestion.unit };
+          return updated;
+        });
+        alert(`AI forslag for ${ingredientName}:\n${suggestion.amount} ${suggestion.unit}\n\n${suggestion.rationale}`);
+      } else {
+        setEditingRecipe(prev => {
+          const ings = [...(prev?.ingredients || [])];
+          const idx = ings.findIndex(i => i.name === ingredientName && i.amount === '');
+          if (idx !== -1) { ings[idx] = { ...ings[idx], amount: suggestion.amount, unit: suggestion.unit }; }
+          return { ...prev, ingredients: ings };
+        });
+        alert(`AI forslag for ${ingredientName}:\n${suggestion.amount} ${suggestion.unit}\n\n${suggestion.rationale}`);
+      }
+    } catch (e) {
+      alert('AI-feil: ' + (e instanceof Error ? e.message : 'Ukjent feil'));
+    } finally {
+      if (isForBatch) setBatchAiIngLoading(null);
+      else setAiIngLoading(null);
+    }
+  };
+
+  const handleAiAdjust = async () => {
+    if (!aiPrompt || !editingRecipe) return;
+    setIsAiLoading(true);
+    try {
+      const adjusted = await geminiService.adjustRecipe(editingRecipe, aiPrompt, language, recipeFlavorTarget);
+      setEditingRecipe(prev => ({ ...prev, ...adjusted, isAiGenerated: true }));
+      setAiPrompt('');
+    } catch (err) {
+      alert(t('ai_chef_error') + (err instanceof Error ? ` ${err.message}` : ''));
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  // ── Batch modal helpers ───────────────────────────────────────────────────
+  const openBatchFromRecipe = (recipe: Recipe) => {
+    setBatchIngredients(JSON.parse(JSON.stringify(recipe.ingredients)));
+    setBatchRecipeName(recipe.name);
+    setBatchFlavorTarget(recipe.flavorProfile || 'mild');
+    setBatchStep(2);
+    setIsBatchModalOpen(true);
+  };
+
+  const addBatchIngredientRow = () => {
+    if (!batchAiIngName.trim()) return;
+    setBatchIngredients(prev => [...prev, { name: batchAiIngName.trim(), amount: '', unit: '' }]);
+    setBatchAiIngName('');
+  };
+
+  const updateBatchIngredient = (idx: number, field: keyof Ingredient, value: string) => {
+    setBatchIngredients(prev => { const u = [...prev]; u[idx] = { ...u[idx], [field]: value }; return u; });
+  };
+
+  const removeBatchIngredient = (idx: number) => {
+    setBatchIngredients(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleBatchAiAdjust = async () => {
+    if (!batchAiPrompt) return;
+    setBatchAiLoading(true);
+    try {
+      const adjusted = await geminiService.adjustRecipe(
+        { name: batchRecipeName, ingredients: batchIngredients },
+        batchAiPrompt, language, batchFlavorTarget
+      );
+      if (adjusted.ingredients) setBatchIngredients(adjusted.ingredients as Ingredient[]);
+      if (adjusted.name && !batchRecipeName) setBatchRecipeName(adjusted.name as string);
+      setBatchAiPrompt('');
+    } catch (e) {
+      alert('AI-feil: ' + (e instanceof Error ? e.message : ''));
+    } finally {
+      setBatchAiLoading(false);
+    }
   };
 
   const handleCreateBatch = () => {
@@ -173,16 +300,22 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
     const batch: Batch = {
       id: `B${Date.now()}`,
       parcelId: newBatch.parcelId,
-      yieldType: newBatch.yieldType || 'Table',
+      yieldType: 'Table',
       quality: newBatch.quality || 'Standard',
       weight: newBatch.weight,
       harvestDate: newBatch.harvestDate || new Date().toISOString().split('T')[0],
       currentStage: 'PLUKKING',
       status: 'ACTIVE',
+      recipeName: batchRecipeName || undefined,
+      recipeSnapshot: batchIngredients.length > 0 ? [...batchIngredients] : undefined,
       logs: [{ stage: 'PLUKKING', startDate: new Date().toISOString().split('T')[0], notes: 'Batch opprettet.' }]
     };
     setBatches([...batches, batch]);
     setIsBatchModalOpen(false);
+    setBatchStep(1);
+    setBatchIngredients([]);
+    setBatchRecipeName('');
+    setBatchAiPrompt('');
     setNewBatch({ yieldType: 'Table', quality: 'Premium', status: 'ACTIVE', weight: 0, harvestDate: new Date().toISOString().split('T')[0], currentStage: 'PLUKKING' });
   };
 
@@ -205,20 +338,6 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
     }));
   };
   
-  const handleAiAdjust = async () => {
-    if (!aiPrompt || !editingRecipe) return;
-    setIsAiLoading(true);
-    try {
-      const adjusted = await geminiService.adjustRecipe(editingRecipe || {}, aiPrompt, language);
-      setEditingRecipe(prev => ({ ...prev, ...adjusted, isAiGenerated: true }));
-      setAiPrompt('');
-    } catch (err) {
-      alert(t('ai_chef_error') + (err instanceof Error ? ` ${err.message}`: ''));
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
-
   const handleDeleteRecipe = (id: string) => {
     if (confirm(t('delete_recipe_confirm'))) {
         setRecipes(recipes.filter(r => r.id !== id));
@@ -464,7 +583,8 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-bold text-white">{batch.id} — {batch.weight} kg</p>
-                  <p className="text-xs text-slate-400 mt-1 flex items-center gap-1"><MapPin size={12} /> {getParcelName(batch.parcelId)}</p>
+                  <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1"><MapPin size={12} /> {getParcelName(batch.parcelId)}</p>
+                  {batch.recipeName && <p className="text-xs text-green-400 mt-0.5 flex items-center gap-1"><ChefHat size={11} /> {batch.recipeName}</p>}
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <span className="text-xs bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded-full">{batch.quality}</span>
@@ -480,11 +600,18 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
                   ))}
                 </div>
               )}
-              <button onClick={() => handleAdvanceStage(batch.id)} className="text-xs mt-3 w-full bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-2 rounded-lg flex items-center justify-center gap-1 transition-all">
-                {STAGES.indexOf(batch.currentStage || 'PLUKKING') < STAGES.length - 1
-                  ? <>{t('advance_to')} {STAGE_LABELS[STAGES[STAGES.indexOf(batch.currentStage || 'PLUKKING') + 1]]} <ChevronRight size={14} /></>
-                  : <><CheckCircle2 size={14} /> {t('archive')}</>}
-              </button>
+              <div className="flex gap-2 mt-3">
+                {batch.recipeSnapshot && batch.recipeSnapshot.length > 0 && (
+                  <button onClick={() => setViewingBatch(batch)} className="flex-shrink-0 text-xs bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 px-3 py-2 rounded-lg flex items-center gap-1 transition-all">
+                    <FileText size={13} /> Innholdsdeklarasjon
+                  </button>
+                )}
+                <button onClick={() => handleAdvanceStage(batch.id)} className="flex-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-2 rounded-lg flex items-center justify-center gap-1 transition-all">
+                  {STAGES.indexOf(batch.currentStage || 'PLUKKING') < STAGES.length - 1
+                    ? <>{t('advance_to')} {STAGE_LABELS[STAGES[STAGES.indexOf(batch.currentStage || 'PLUKKING') + 1]]} <ChevronRight size={14} /></>
+                    : <><CheckCircle2 size={14} /> {t('archive')}</>}
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -537,15 +664,28 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
             {filteredRecipes.map(recipe => (
               <div key={recipe.id} className="glass rounded-xl p-4 border border-white/10 flex flex-col">
                 <div className="flex items-start justify-between mb-2">
-                  <h4 className="font-bold text-white text-sm">{recipe.name}</h4>
-                  {recipe.isAiGenerated && <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">AI</span>}
+                  <h4 className="font-bold text-white text-sm leading-snug">{recipe.name}</h4>
+                  {recipe.isAiGenerated && <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full flex-shrink-0 ml-2">AI</span>}
                 </div>
-                {recipe.description && <p className="text-xs text-slate-400 mb-3 flex-1">{recipe.description}</p>}
+                {recipe.description && <p className="text-xs text-slate-400 mb-2 flex-1 line-clamp-2">{recipe.description}</p>}
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {(recipe.ingredients || []).slice(0, 4).map((ing, i) => (
+                    <span key={i} className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">{ing.name}</span>
+                  ))}
+                  {(recipe.ingredients || []).length > 4 && <span className="text-[10px] text-slate-500">+{recipe.ingredients.length - 4}</span>}
+                </div>
                 <div className="flex items-center justify-between mt-auto pt-2 border-t border-white/5">
                   <span className={`text-xs px-2 py-0.5 rounded-full ${recipe.flavorProfile ? 'bg-green-500/10 text-green-400' : 'bg-slate-700 text-slate-400'}`}>
                     {recipe.flavorProfile || 'standard'}
                   </span>
                   <div className="flex gap-1">
+                    <button
+                      onClick={() => openBatchFromRecipe(recipe)}
+                      className="p-1.5 text-green-400 hover:text-green-300 hover:bg-green-500/10 rounded-lg transition-all"
+                      title="Start batch med denne oppskriften"
+                    >
+                      <Plus size={14} />
+                    </button>
                     <button onClick={() => handleOpenRecipeModal(recipe)} className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
                       <Edit3 size={14} />
                     </button>
@@ -583,55 +723,128 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
         </div>
       )}
 
-      {/* New Recipe Modal */}
+      {/* ── Recipe Modal ─────────────────────────────────────────────────────── */}
       {isRecipeModalOpen && editingRecipe && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="glass rounded-2xl border border-white/10 p-6 w-full max-w-lg m-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="glass rounded-2xl border border-white/10 w-full max-w-2xl max-h-[92vh] overflow-y-auto">
+            <div className="sticky top-0 bg-slate-900/95 rounded-t-2xl px-6 py-4 border-b border-white/10 flex items-center justify-between">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <ChefHat size={18} className="text-sky-400" />
-                {editingRecipe.id ? t('edit_recipe') || 'Rediger oppskrift' : t('new_recipe')}
+                {editingRecipe.id ? 'Rediger oppskrift' : 'Ny oppskrift'}
               </h3>
               <button onClick={() => setIsRecipeModalOpen(false)} className="text-slate-400 hover:text-white"><X size={20} /></button>
             </div>
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder={t('recipe_name') || 'Oppskriftsnavn'}
-                value={editingRecipe.name || ''}
+
+            <div className="p-6 space-y-5">
+              {/* Name */}
+              <input type="text" placeholder="Oppskriftsnavn" value={editingRecipe.name || ''}
                 onChange={e => setEditingRecipe(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500/50"
-              />
-              <textarea
-                placeholder={t('description') || 'Beskrivelse'}
-                value={editingRecipe.description || ''}
+                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-green-500/50" />
+
+              {/* Description */}
+              <textarea placeholder="Beskrivelse" value={editingRecipe.description || ''}
                 onChange={e => setEditingRecipe(prev => ({ ...prev, description: e.target.value }))}
-                rows={3}
-                className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500/50 resize-none"
-              />
-              <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4">
-                <h4 className="text-sm font-bold text-purple-300 flex items-center gap-2 mb-3"><Wand2 size={14} /> AI Chef</h4>
+                rows={2}
+                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-green-500/50 resize-none" />
+
+              {/* Flavor target */}
+              <div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Smaksmål (påvirker AI-forslag)</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { id: 'mild', label: 'Mild', emoji: '🫒' },
+                    { id: 'syrlig', label: 'Syrlig', emoji: '🍋' },
+                    { id: 'frisk', label: 'Frisk', emoji: '🌿' },
+                    { id: 'krydret', label: 'Krydret', emoji: '🌶️' },
+                    { id: 'sterk', label: 'Sterk', emoji: '💪' },
+                    { id: 'middelhav', label: 'Middelhav', emoji: '🌊' },
+                  ].map(f => (
+                    <button key={f.id} onClick={() => { setRecipeFlavorTarget(f.id); setEditingRecipe(prev => ({ ...prev, flavorProfile: f.id as any })); }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${recipeFlavorTarget === f.id ? 'bg-green-500/30 text-green-300 border border-green-500/40' : 'bg-slate-800 text-slate-400 border border-white/5 hover:border-white/20'}`}>
+                      {f.emoji} {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ingredient list */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ingredienser (per 1 liter saltlake)</p>
+                  <span className="text-[10px] text-slate-600">{(editingRecipe.ingredients || []).length} ingredienser</span>
+                </div>
+                <div className="space-y-2 mb-3">
+                  {(editingRecipe.ingredients || []).map((ing, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <span className="text-xs text-slate-400 w-40 truncate">{ing.name}</span>
+                      <input type="text" placeholder="Mengde" value={ing.amount}
+                        onChange={e => updateIngredient(idx, 'amount', e.target.value)}
+                        className="w-20 bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-green-500/50" />
+                      <input type="text" placeholder="Enhet" value={ing.unit}
+                        onChange={e => updateIngredient(idx, 'unit', e.target.value)}
+                        className="w-20 bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-green-500/50" />
+                      <button
+                        onClick={() => handleAiSuggestAmount(ing.name, false)}
+                        disabled={aiIngLoading === ing.name}
+                        className="p-1.5 text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 rounded-lg transition-all"
+                        title="AI forslag for mengde"
+                      >
+                        {aiIngLoading === ing.name ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                      </button>
+                      <button onClick={() => removeIngredient(idx)} className="p-1.5 text-slate-600 hover:text-red-400 rounded-lg transition-all">
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {/* Add ingredient row */}
                 <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder={t('ai_adjust_prompt') || 'Beskriv hva du vil justere...'}
-                    value={aiPrompt}
-                    onChange={e => setAiPrompt(e.target.value)}
-                    className="flex-1 bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
-                  />
-                  <button
-                    onClick={handleAiAdjust}
-                    disabled={isAiLoading || !aiPrompt}
-                    className="bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 px-3 py-2 rounded-lg text-sm transition-all disabled:opacity-50"
-                  >
+                  <input type="text" placeholder="Legg til ingrediens (f.eks oregano, chilli, sitron...)"
+                    value={newIngName} onChange={e => setNewIngName(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && addIngredientRow()}
+                    className="flex-1 bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-green-500/50" />
+                  <button onClick={addIngredientRow} className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-xs transition-all">
+                    <Plus size={14} />
+                  </button>
+                </div>
+                {/* Quick-add common ingredients */}
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {['Oregano', 'Chilli', 'Paprika', 'Sitron', 'Hvitløk', 'Rosmarin', 'Timian', 'Dill', 'Eddik', 'Laurbærblad', 'Svart pepper'].map(ing => (
+                    <button key={ing} onClick={() => { setEditingRecipe(prev => ({ ...prev, ingredients: [...(prev?.ingredients || []), { name: ing, amount: '', unit: '' }] })); }}
+                      className="text-[10px] px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg border border-white/5 transition-all">
+                      + {ing}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* AI Chef */}
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4">
+                <h4 className="text-sm font-bold text-purple-300 flex items-center gap-2 mb-1"><Wand2 size={14} /> AI Chef</h4>
+                <p className="text-[10px] text-slate-500 mb-3">AI justerer hele oppskriften basert på ditt smaksmål. Legg til ingredienser først, så foreslår AI mengder.</p>
+                <div className="flex gap-2">
+                  <input type="text" placeholder="Beskriv hva du vil oppnå, f.eks 'mer syrlig med sitronsmak'..."
+                    value={aiPrompt} onChange={e => setAiPrompt(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleAiAdjust()}
+                    className="flex-1 bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
+                  <button onClick={handleAiAdjust} disabled={isAiLoading || !aiPrompt}
+                    className="bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 px-4 py-2 rounded-lg text-sm transition-all disabled:opacity-50 flex items-center gap-2">
                     {isAiLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                    {isAiLoading ? 'Justerer...' : 'Juster'}
                   </button>
                 </div>
               </div>
+
+              {/* Notes */}
+              <textarea placeholder="Notater / prosess-tips" value={editingRecipe.notes || ''}
+                onChange={e => setEditingRecipe(prev => ({ ...prev, notes: e.target.value }))}
+                rows={2}
+                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-green-500/50 resize-none" />
+
               <div className="flex gap-2 justify-end">
-                <button onClick={() => setIsRecipeModalOpen(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">{t('cancel') || 'Avbryt'}</button>
-                <button onClick={handleSaveRecipe} className="bg-green-500/20 text-green-300 hover:bg-green-500/30 px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2">
-                  <Save size={14} /> {t('save') || 'Lagre'}
+                <button onClick={() => setIsRecipeModalOpen(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">Avbryt</button>
+                <button onClick={handleSaveRecipe} className="bg-green-500/20 text-green-300 hover:bg-green-500/30 px-5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2">
+                  <Save size={14} /> Lagre oppskrift
                 </button>
               </div>
             </div>
@@ -639,45 +852,270 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
         </div>
       )}
 
-      {/* New Batch Modal */}
+      {/* ── Batch Modal (2-step) ──────────────────────────────────────────────── */}
       {isBatchModalOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="glass rounded-2xl border border-white/10 p-6 w-full max-w-md m-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2"><Plus size={18} className="text-green-400" /> {t('new_batch')}</h3>
-              <button onClick={() => setIsBatchModalOpen(false)} className="text-slate-400 hover:text-white"><X size={20} /></button>
-            </div>
-            <div className="space-y-4">
-              <select
-                value={newBatch.parcelId || ''}
-                onChange={e => setNewBatch(prev => ({ ...prev, parcelId: e.target.value }))}
-                className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
-              >
-                <option value="">{t('select_parcel') || 'Velg parsell...'}</option>
-                {parcels.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-              <input
-                type="number"
-                placeholder={t('weight_kg') || 'Vekt (kg)'}
-                value={newBatch.weight || ''}
-                onChange={e => setNewBatch(prev => ({ ...prev, weight: Number(e.target.value) }))}
-                className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
-              />
-              <select
-                value={newBatch.quality || 'Premium'}
-                onChange={e => setNewBatch(prev => ({ ...prev, quality: e.target.value as any }))}
-                className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
-              >
-                <option value="Premium">Premium</option>
-                <option value="Good">Good</option>
-                <option value="Standard">Standard</option>
-              </select>
-              <div className="flex gap-2 justify-end">
-                <button onClick={() => setIsBatchModalOpen(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">{t('cancel') || 'Avbryt'}</button>
-                <button onClick={handleCreateBatch} className="bg-green-500/20 text-green-300 hover:bg-green-500/30 px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2">
-                  <Plus size={14} /> {t('create') || 'Opprett'}
-                </button>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="glass rounded-2xl border border-white/10 w-full max-w-2xl max-h-[92vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-slate-900/95 rounded-t-2xl px-6 py-4 border-b border-white/10 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Layers size={18} className="text-green-400" /> Ny bordoliven-batch
+                </h3>
+                <div className="flex gap-2 mt-1">
+                  {[1, 2].map(s => (
+                    <span key={s} className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${batchStep === s ? 'bg-green-500/20 text-green-300' : 'bg-slate-800 text-slate-500'}`}>
+                      {s === 1 ? '1. Grunninfo' : '2. Oppskrift & ingredienser'}
+                    </span>
+                  ))}
+                </div>
               </div>
+              <button onClick={() => { setIsBatchModalOpen(false); setBatchStep(1); }} className="text-slate-400 hover:text-white"><X size={20} /></button>
+            </div>
+
+            <div className="p-6">
+              {/* ── Step 1: Basic info ── */}
+              {batchStep === 1 && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Parsell *</label>
+                      <select value={newBatch.parcelId || ''}
+                        onChange={e => setNewBatch(prev => ({ ...prev, parcelId: e.target.value }))}
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-green-500/50">
+                        <option value="">Velg parsell...</option>
+                        {parcels.map(p => <option key={p.id} value={p.id} className="bg-slate-800">{p.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Vekt (kg) *</label>
+                      <input type="number" placeholder="0" min="1"
+                        value={newBatch.weight || ''}
+                        onChange={e => setNewBatch(prev => ({ ...prev, weight: +e.target.value }))}
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-green-500/50 font-bold" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Dato</label>
+                      <input type="date" value={newBatch.harvestDate}
+                        onChange={e => setNewBatch(prev => ({ ...prev, harvestDate: e.target.value }))}
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Kvalitet</label>
+                      <select value={newBatch.quality || 'Premium'}
+                        onChange={e => setNewBatch(prev => ({ ...prev, quality: e.target.value as any }))}
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none">
+                        <option value="Premium">Premium</option>
+                        <option value="Good">Good</option>
+                        <option value="Standard">Standard</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 justify-end pt-2">
+                    <button onClick={() => setIsBatchModalOpen(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Avbryt</button>
+                    <button
+                      onClick={() => setBatchStep(2)}
+                      disabled={!newBatch.parcelId || !newBatch.weight || newBatch.weight <= 0}
+                      className="bg-green-500/20 text-green-300 hover:bg-green-500/30 disabled:opacity-40 px-5 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all">
+                      Velg oppskrift <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Step 2: Recipe + ingredients ── */}
+              {batchStep === 2 && (
+                <div className="space-y-5">
+                  {/* Recipe selector */}
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Velg oppskrift fra bibliotek</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-1">
+                      {recipes.map(r => (
+                        <button key={r.id}
+                          onClick={() => { setBatchIngredients(JSON.parse(JSON.stringify(r.ingredients))); setBatchRecipeName(r.name); setBatchFlavorTarget(r.flavorProfile || 'mild'); }}
+                          className={`text-left p-3 rounded-xl border text-xs transition-all ${batchRecipeName === r.name ? 'border-green-500/50 bg-green-500/10 text-green-300' : 'border-white/10 bg-black/30 text-slate-400 hover:border-white/20 hover:text-white'}`}>
+                          <p className="font-bold text-white text-[11px] truncate">{r.name}</p>
+                          <p className="text-slate-500 mt-0.5">{r.flavorProfile} · {r.ingredients.length} ingredienser</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Flavor target */}
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Smaksmål</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { id: 'mild', label: 'Mild 🫒', sub: 'Supermarked' },
+                        { id: 'syrlig', label: 'Syrlig 🍋', sub: 'Antipasti' },
+                        { id: 'frisk', label: 'Frisk 🌿', sub: 'Premium' },
+                        { id: 'krydret', label: 'Krydret 🌶️', sub: 'Eksport' },
+                        { id: 'sterk', label: 'Sterk 💪', sub: 'Spesialitet' },
+                        { id: 'middelhav', label: 'Middelhav 🌊', sub: 'Gourmet' },
+                      ].map(f => (
+                        <button key={f.id} onClick={() => setBatchFlavorTarget(f.id)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex flex-col items-center ${batchFlavorTarget === f.id ? 'bg-green-500/30 text-green-300 border border-green-500/40' : 'bg-slate-800 text-slate-400 border border-white/5 hover:border-white/20'}`}>
+                          <span>{f.label}</span>
+                          <span className="text-[9px] opacity-60">{f.sub}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Ingredient editor */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ingredienser for denne batchen</p>
+                      <span className="text-[10px] text-slate-600">{batchIngredients.length} ingredienser · per 1 liter lake</span>
+                    </div>
+                    <div className="space-y-2 mb-3">
+                      {batchIngredients.map((ing, idx) => (
+                        <div key={idx} className="flex gap-2 items-center">
+                          <span className="text-xs text-slate-300 w-36 truncate flex-shrink-0">{ing.name}</span>
+                          <input type="text" placeholder="Mengde" value={ing.amount}
+                            onChange={e => updateBatchIngredient(idx, 'amount', e.target.value)}
+                            className="w-20 bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-green-500/50" />
+                          <input type="text" placeholder="Enhet" value={ing.unit}
+                            onChange={e => updateBatchIngredient(idx, 'unit', e.target.value)}
+                            className="w-20 bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-green-500/50" />
+                          <button
+                            onClick={() => handleAiSuggestAmount(ing.name, true)}
+                            disabled={batchAiIngLoading === ing.name}
+                            className="p-1.5 text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 rounded-lg transition-all flex-shrink-0"
+                            title="AI forslag mengde">
+                            {batchAiIngLoading === ing.name ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                          </button>
+                          <button onClick={() => removeBatchIngredient(idx)} className="p-1.5 text-slate-600 hover:text-red-400 rounded-lg flex-shrink-0 transition-all">
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Add ingredient */}
+                    <div className="flex gap-2 mb-2">
+                      <input type="text" placeholder="Legg til ingrediens..."
+                        value={batchAiIngName} onChange={e => setBatchAiIngName(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addBatchIngredientRow()}
+                        className="flex-1 bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-green-500/50" />
+                      <button onClick={addBatchIngredientRow} className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-xs transition-all"><Plus size={14} /></button>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {['Oregano', 'Chilli', 'Paprika', 'Sitron', 'Hvitløk', 'Rosmarin', 'Timian', 'Dill', 'Eddik', 'Laurbærblad'].map(ing => (
+                        <button key={ing}
+                          onClick={() => setBatchIngredients(prev => [...prev, { name: ing, amount: '', unit: '' }])}
+                          className="text-[10px] px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg border border-white/5 transition-all">
+                          + {ing}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* AI overall adjust */}
+                  <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4">
+                    <h4 className="text-sm font-bold text-purple-300 flex items-center gap-2 mb-2"><Wand2 size={14} /> AI justerer hele batchen</h4>
+                    <div className="flex gap-2">
+                      <input type="text" placeholder={`F.eks 'legg til mer chilli for krydret smak'...`}
+                        value={batchAiPrompt} onChange={e => setBatchAiPrompt(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleBatchAiAdjust()}
+                        className="flex-1 bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
+                      <button onClick={handleBatchAiAdjust} disabled={batchAiLoading || !batchAiPrompt}
+                        className="bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 px-4 py-2 rounded-lg text-sm transition-all disabled:opacity-50 flex items-center gap-2">
+                        {batchAiLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                        {batchAiLoading ? 'Justerer...' : 'Juster'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-2 justify-between pt-2">
+                    <button onClick={() => setBatchStep(1)} className="px-4 py-2 text-sm text-slate-400 hover:text-white flex items-center gap-1">
+                      ← Tilbake
+                    </button>
+                    <button onClick={handleCreateBatch}
+                      className="bg-green-500 hover:bg-green-400 text-black font-bold px-6 py-2.5 rounded-xl text-sm flex items-center gap-2 transition-all">
+                      <CheckCircle2 size={16} /> Opprett batch
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Content Declaration Modal ─────────────────────────────────────────── */}
+      {viewingBatch && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="glass rounded-2xl border border-blue-500/20 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-slate-900/95 rounded-t-2xl px-6 py-4 border-b border-white/10 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <FileText size={18} className="text-blue-400" /> Innholdsdeklarasjon
+              </h3>
+              <button onClick={() => setViewingBatch(null)} className="text-slate-400 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Product header */}
+              <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-black text-white text-lg">Bordoliven – {viewingBatch.recipeName || 'Egenoppskrift'}</p>
+                    <p className="text-slate-400 text-xs mt-0.5">
+                      Batch #{viewingBatch.id} · {viewingBatch.weight} kg ·{' '}
+                      {getParcelName(viewingBatch.parcelId)}
+                    </p>
+                  </div>
+                  <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-1 rounded-lg">{viewingBatch.quality}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
+                  <div><span className="text-slate-500">Høstedato:</span> <span className="text-white">{viewingBatch.harvestDate}</span></div>
+                  <div><span className="text-slate-500">Nåværende steg:</span> <span className="text-white">{STAGE_LABELS[viewingBatch.currentStage || 'PLUKKING']}</span></div>
+                  <div><span className="text-slate-500">Parsell:</span> <span className="text-white">{getParcelName(viewingBatch.parcelId)}</span></div>
+                  <div><span className="text-slate-500">Oppskrift:</span> <span className="text-white">{viewingBatch.recipeName || '—'}</span></div>
+                </div>
+              </div>
+
+              {/* EU-style ingredient declaration */}
+              <div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Ingredienser (per 1 liter saltlake)</p>
+                <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="text-left text-[10px] font-bold text-slate-500 uppercase px-4 py-2">#</th>
+                        <th className="text-left text-[10px] font-bold text-slate-500 uppercase px-4 py-2">Ingrediens</th>
+                        <th className="text-right text-[10px] font-bold text-slate-500 uppercase px-4 py-2">Mengde</th>
+                        <th className="text-right text-[10px] font-bold text-slate-500 uppercase px-4 py-2">Enhet</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(viewingBatch.recipeSnapshot || []).map((ing, idx) => (
+                        <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
+                          <td className="px-4 py-2 text-slate-600 text-xs">{idx + 1}</td>
+                          <td className="px-4 py-2 text-white font-medium">{ing.name}</td>
+                          <td className="px-4 py-2 text-right text-green-400 font-mono font-bold">{ing.amount}</td>
+                          <td className="px-4 py-2 text-right text-slate-400">{ing.unit}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-[10px] text-slate-600 mt-2 italic">
+                  * Ingredienser i fallende rekkefølge etter vekt. Produsert av oliven fra {getParcelName(viewingBatch.parcelId)}.
+                </p>
+              </div>
+
+              {/* Print/copy note */}
+              <div className="bg-yellow-500/5 border border-yellow-500/10 rounded-xl p-3 text-xs text-yellow-300/70">
+                <Tag size={12} className="inline mr-1" />
+                Denne innholdsdeklarasjonen kan brukes på etikett. Husk å legge til nettovekt, holdbarhetsdato og produsent-info i henhold til EU-forordning 1169/2011.
+              </div>
+
+              <button onClick={() => setViewingBatch(null)} className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl text-sm font-semibold transition-all">
+                Lukk
+              </button>
             </div>
           </div>
         </div>
