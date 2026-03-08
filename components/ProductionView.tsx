@@ -7,9 +7,9 @@ import {
   Droplets, Thermometer, FlaskConical, Scale,
   Loader2, Trash2, CheckCircle2, ShoppingCart,
   ChevronRight, Search, Bell, Archive, RefreshCcw,
-  ClipboardList, MapPin, Award, Timer, Filter
+  ClipboardList, MapPin, Award, Timer, Filter, Wheat
 } from 'lucide-react';
-import { Batch, Parcel, Recipe, Ingredient, TableOliveStage, Language } from '../types';
+import { Batch, Parcel, Recipe, Ingredient, TableOliveStage, Language, HarvestRecord, SalesChannel } from '../types';
 import { geminiService } from '../services/geminiService';
 import { useTranslation } from '../services/i18nService';
 import {
@@ -17,7 +17,24 @@ import {
 } from '../data/olivenRecipes';
 
 type FlavorFilter = 'all' | 'mild' | 'syrlig' | 'krydret' | 'urterik' | 'sitrus' | 'hvitlok' | 'middelhav';
-type MainTab = 'pipeline' | 'active' | 'history' | 'recipes' | 'guide';
+type MainTab = 'harvest' | 'pipeline' | 'active' | 'history' | 'recipes' | 'guide';
+
+const CHANNEL_LABELS: Record<SalesChannel, string> = {
+  cooperativa:  'Cooperativa (råvare)',
+  bordoliven:   'Bordoliven (spise)',
+  olje_premier: 'Olje – Extra Virgin Premier',
+  olje_export:  'Olje – Export',
+};
+const CHANNEL_COLORS: Record<SalesChannel, string> = {
+  cooperativa:  'bg-amber-500/20 text-amber-300',
+  bordoliven:   'bg-green-500/20 text-green-300',
+  olje_premier: 'bg-yellow-500/20 text-yellow-200',
+  olje_export:  'bg-blue-500/20 text-blue-300',
+};
+const VARIETIES = ['Picual', 'Arbequina', 'Hojiblanca', 'Manzanilla', 'Lechin', 'Cornicabra', 'Frantoio', 'Leccino', 'Annen'];
+
+const currentSeason = () => new Date().getFullYear().toString();
+const LS_HARVESTS = 'olivia_harvests';
 
 const STAGES: TableOliveStage[] = ['PLUKKING', 'LAKE', 'SKYLLING', 'MARINERING', 'LAGRING', 'PAKKING', 'SALG'];
 
@@ -39,6 +56,48 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
     SALG: t('sale'),
   };
   
+  // ── Harvest records (persisted to localStorage) ──────────────────────────
+  const [harvests, setHarvests] = useState<HarvestRecord[]>(() => {
+    try { return JSON.parse(localStorage.getItem(LS_HARVESTS) || '[]'); } catch { return []; }
+  });
+  const [harvestSeason, setHarvestSeason] = useState(currentSeason());
+  const [newHarvest, setNewHarvest] = useState<Partial<HarvestRecord>>({
+    season: currentSeason(),
+    date: new Date().toISOString().slice(0, 10),
+    variety: 'Picual',
+    kg: 0,
+    channel: 'cooperativa',
+    pricePerKg: 0.45,
+  });
+  const saveHarvests = (updated: HarvestRecord[]) => {
+    setHarvests(updated);
+    localStorage.setItem(LS_HARVESTS, JSON.stringify(updated));
+  };
+  const addHarvest = () => {
+    if (!newHarvest.parcelId || !newHarvest.kg || newHarvest.kg <= 0) return;
+    const rec: HarvestRecord = {
+      id: `H${Date.now()}`,
+      parcelId: newHarvest.parcelId!,
+      season: newHarvest.season || currentSeason(),
+      date: newHarvest.date || new Date().toISOString().slice(0, 10),
+      variety: newHarvest.variety || 'Picual',
+      kg: newHarvest.kg,
+      channel: newHarvest.channel as SalesChannel || 'cooperativa',
+      pricePerKg: newHarvest.pricePerKg || 0,
+      notes: newHarvest.notes,
+    };
+    saveHarvests([rec, ...harvests]);
+    setNewHarvest(prev => ({ ...prev, kg: 0, notes: '' }));
+  };
+  const deleteHarvest = (id: string) => {
+    if (!confirm('Slette denne høsteregistreringen?')) return;
+    saveHarvests(harvests.filter(h => h.id !== id));
+  };
+  const seasonHarvests = harvests.filter(h => h.season === harvestSeason);
+  const totalKg = seasonHarvests.reduce((s, h) => s + h.kg, 0);
+  const totalRevenue = seasonHarvests.reduce((s, h) => s + h.kg * h.pricePerKg, 0);
+  const seasons = [...new Set([currentSeason(), ...harvests.map(h => h.season)])].sort((a,b) => b.localeCompare(a));
+
   const [batches, setBatches] = useState<Batch[]>([
     {
       id: 'B001',
@@ -67,7 +126,7 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
     }
   ]);
   const [recipes, setRecipes] = useState<Recipe[]>(DEFAULT_RECIPES);
-  const [mainTab, setMainTab] = useState<MainTab>('pipeline');
+  const [mainTab, setMainTab] = useState<MainTab>('harvest');
   const [flavorFilter, setFlavorFilter] = useState<FlavorFilter>('all');
   const [recipeSearch, setRecipeSearch] = useState('');
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
@@ -194,6 +253,7 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
       {/* Tabs */}
       <div className="flex gap-1 border-b border-white/10 pb-0 overflow-x-auto">
         {([
+          { id: 'harvest', label: 'Høsting', icon: <Wheat size={14} />, count: seasonHarvests.length },
           { id: 'pipeline', label: t('pipeline'), icon: <Layers size={14} />, count: activeBatches.length },
           { id: 'active', label: t('active_batches'), icon: <ClipboardList size={14} />, count: activeBatches.length },
           { id: 'history', label: t('history'), icon: <Archive size={14} />, count: archivedBatches.length },
@@ -209,6 +269,150 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
           </button>
         ))}
       </div>
+
+      {/* ── Høsting tab ── */}
+      {mainTab === 'harvest' && (
+        <div className="space-y-6">
+          {/* Season KPI row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="glass rounded-2xl p-4 border border-white/10">
+              <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">Sesong</p>
+              <select value={harvestSeason} onChange={e => setHarvestSeason(e.target.value)}
+                className="bg-transparent text-lg font-black text-white focus:outline-none cursor-pointer w-full">
+                {seasons.map(s => <option key={s} value={s} className="bg-slate-800">{s}</option>)}
+              </select>
+            </div>
+            <div className="glass rounded-2xl p-4 border border-white/10">
+              <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">Totalt høstet</p>
+              <p className="text-2xl font-black text-white">{totalKg.toLocaleString('no')} <span className="text-base text-slate-400">kg</span></p>
+            </div>
+            <div className="glass rounded-2xl p-4 border border-white/10">
+              <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">Bruttoinntekt</p>
+              <p className="text-2xl font-black text-green-400">€{totalRevenue.toLocaleString('no', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+            </div>
+            <div className="glass rounded-2xl p-4 border border-white/10">
+              <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">Registreringer</p>
+              <p className="text-2xl font-black text-white">{seasonHarvests.length}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            {/* New harvest form */}
+            <div className="lg:col-span-2 glass rounded-2xl p-6 border border-green-500/20 space-y-4">
+              <h4 className="font-bold text-white flex items-center gap-2"><Plus size={16} className="text-green-400" /> Registrer høsting</h4>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-1">Parsell</label>
+                  <select value={newHarvest.parcelId || ''} onChange={e => setNewHarvest(p => ({...p, parcelId: e.target.value}))}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-green-500/50">
+                    <option value="">Velg parsell...</option>
+                    {parcels.map(p => <option key={p.id} value={p.id} className="bg-slate-800">{p.name}</option>)}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-1">Dato</label>
+                    <input type="date" value={newHarvest.date} onChange={e => setNewHarvest(p => ({...p, date: e.target.value}))}
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-3 text-sm text-white outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-1">Sort</label>
+                    <select value={newHarvest.variety} onChange={e => setNewHarvest(p => ({...p, variety: e.target.value}))}
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-3 text-sm text-white outline-none">
+                      {VARIETIES.map(v => <option key={v} value={v} className="bg-slate-800">{v}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-1">Salgskanal</label>
+                  <select value={newHarvest.channel} onChange={e => setNewHarvest(p => ({...p, channel: e.target.value as SalesChannel, pricePerKg: e.target.value === 'cooperativa' ? 0.45 : e.target.value === 'bordoliven' ? 0.90 : e.target.value === 'olje_premier' ? 0.80 : 0.60}))}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none">
+                    {Object.entries(CHANNEL_LABELS).map(([k, v]) => <option key={k} value={k} className="bg-slate-800">{v}</option>)}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-1">Kilo (kg)</label>
+                    <input type="number" min="0" step="10" value={newHarvest.kg || ''} onChange={e => setNewHarvest(p => ({...p, kg: +e.target.value}))}
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none font-bold" placeholder="0" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-1">Pris/kg (€)</label>
+                    <input type="number" min="0" step="0.01" value={newHarvest.pricePerKg || ''} onChange={e => setNewHarvest(p => ({...p, pricePerKg: +e.target.value}))}
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none font-bold" placeholder="0.00" />
+                  </div>
+                </div>
+                {newHarvest.kg && newHarvest.pricePerKg ? (
+                  <div className="p-3 bg-green-500/10 rounded-xl border border-green-500/20 text-sm font-bold text-green-400">
+                    Inntekt: €{(newHarvest.kg * newHarvest.pricePerKg).toLocaleString('no', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                  </div>
+                ) : null}
+                <div>
+                  <label className="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-1">Notater</label>
+                  <input type="text" value={newHarvest.notes || ''} onChange={e => setNewHarvest(p => ({...p, notes: e.target.value}))}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none" placeholder="Valgfritt..." />
+                </div>
+                <button onClick={addHarvest} disabled={!newHarvest.parcelId || !newHarvest.kg}
+                  className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-40 text-black font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all">
+                  <Save size={16} /> Lagre høstregistrering
+                </button>
+              </div>
+            </div>
+
+            {/* Harvest list */}
+            <div className="lg:col-span-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-white">Høsteregistreringer {harvestSeason}</h4>
+                <span className="text-xs text-slate-500">{seasonHarvests.length} poster</span>
+              </div>
+              {seasonHarvests.length === 0 ? (
+                <div className="glass rounded-2xl p-10 border border-white/10 text-center text-slate-500">
+                  <Wheat size={36} className="mx-auto mb-3 opacity-30" />
+                  <p>Ingen registreringer for {harvestSeason}</p>
+                  <p className="text-xs mt-1">Fyll inn skjemaet til venstre for å starte</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {/* Per-parcel summary */}
+                  {(() => {
+                    const byParcel: Record<string, {kg: number; rev: number; name: string}> = {};
+                    seasonHarvests.forEach(h => {
+                      const name = parcels.find(p => p.id === h.parcelId)?.name || 'Ukjent';
+                      if (!byParcel[h.parcelId]) byParcel[h.parcelId] = {kg: 0, rev: 0, name};
+                      byParcel[h.parcelId].kg += h.kg;
+                      byParcel[h.parcelId].rev += h.kg * h.pricePerKg;
+                    });
+                    return Object.values(byParcel).length > 1 ? (
+                      <div className="grid grid-cols-2 gap-2 mb-4">
+                        {Object.values(byParcel).map(p => (
+                          <div key={p.name} className="glass rounded-xl p-3 border border-white/5 text-xs">
+                            <p className="font-bold text-white truncate">{p.name}</p>
+                            <p className="text-slate-400 mt-0.5">{p.kg.toLocaleString('no')} kg · <span className="text-green-400 font-bold">€{p.rev.toLocaleString('no',{maximumFractionDigits:0})}</span></p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null;
+                  })()}
+                  {seasonHarvests.map(h => (
+                    <div key={h.id} className="glass rounded-xl p-4 border border-white/10 flex items-center gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${CHANNEL_COLORS[h.channel]}`}>{CHANNEL_LABELS[h.channel]}</span>
+                          <span className="text-[10px] text-slate-500">{h.date}</span>
+                        </div>
+                        <p className="text-sm font-bold text-white">{parcels.find(p => p.id === h.parcelId)?.name || h.parcelId} · {h.variety}</p>
+                        <p className="text-xs text-slate-400">{h.kg.toLocaleString('no')} kg × €{h.pricePerKg}/kg = <span className="text-green-400 font-bold">€{(h.kg * h.pricePerKg).toLocaleString('no',{maximumFractionDigits:0})}</span></p>
+                        {h.notes && <p className="text-[10px] text-slate-500 mt-0.5 italic">{h.notes}</p>}
+                      </div>
+                      <button onClick={() => deleteHarvest(h.id)} className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg flex-shrink-0 transition-colors"><Trash2 size={14} /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {mainTab === 'pipeline' && (
         activeBatches.length === 0 ? (

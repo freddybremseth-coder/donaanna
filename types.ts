@@ -232,13 +232,74 @@ export interface RevenueItem {
 }
 
 export interface ProfitabilitySnapshot {
-  id: string; // e.g., "total_2024", "parcel_p1_2024", "product_evoo_2024"
+  id: string;
   type: 'Total' | 'Parcel' | 'Product';
-  label: string; // e.g., "Total Farm 2024", "Parcel: Los Almendros 2024", "Product: EVOO 500ml 2024"
-  timeframe: string; // e.g., "2024", "Q3 2024"
+  label: string;
+  timeframe: string;
   totalRevenue: number;
   totalCosts: number;
   netProfit: number;
   revenueBreakdown: Partial<Record<RevenueCategory, number>>;
   costBreakdown: Partial<Record<CostCategory, number>>;
 }
+
+// ── Farm economics: harvest logging, expenses, subsidies ─────────────────────
+
+export type SalesChannel =
+  | 'cooperativa'       // raw olives to coop
+  | 'bordoliven'        // table olives
+  | 'olje_premier'      // oil – extra virgin premier
+  | 'olje_export';      // oil – export grade
+
+export type ExpenseCategory =
+  | 'innhøsting'        // harvesting labour + machinery
+  | 'beskjæring'        // pruning
+  | 'nye_planter'       // new plants
+  | 'trefelling'        // dead tree / branch removal
+  | 'sprøyting'         // spraying / plant protection
+  | 'vann'              // water / irrigation
+  | 'gjødsel'           // fertiliser
+  | 'forsikring'        // insurance
+  | 'vedlikehold'       // machinery & maintenance
+  | 'administrasjon'    // admin / accountant
+  | 'transport'         // transport
+  | 'emballasje'        // packaging
+  | 'annet';            // other
+
+export type SubsidyType =
+  | 'eu_okologisk'      // EU organic farming support
+  | 'eu_pao'            // EU olive oil production support
+  | 'annet';            // other subsidy
+
+export interface HarvestRecord {
+  id: string;
+  parcelId: string;
+  season: string;        // "2024" = harvest year
+  date: string;          // YYYY-MM-DD
+  variety: string;       // Picual, Arbequina, …
+  kg: number;
+  channel: SalesChannel;
+  pricePerKg: number;    // EUR
+  notes?: string;
+}
+
+export interface FarmExpense {
+  id: string;
+  date: string;
+  season: string;
+  category: ExpenseCategory;
+  description: string;
+  amount: number;        // EUR, positive
+  scope: 'farm' | 'parcel';
+  parcelId?: string;
+}
+
+export interface SubsidyIncome {
+  id: string;
+  date: string;
+  season: string;
+  type: SubsidyType;
+  amount: number;        // EUR
+  description: string;
+}
+

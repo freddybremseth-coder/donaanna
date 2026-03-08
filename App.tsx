@@ -163,7 +163,7 @@ const App: React.FC = () => {
         onParcelSelect={setSelectedParcel}
       />;
       case 'production': return <ProductionView parcels={parcels} language={language} />;
-      case 'economy': return <ProfitabilityPage language={language} />;
+      case 'economy': return <ProfitabilityPage language={language} parcels={parcels} />;
       case 'fleet': return <FleetView />;
       case 'irrigation': return <IrrigationView />;
       case 'tasks': return <TasksView />;
