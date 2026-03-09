@@ -130,6 +130,7 @@ const FieldConsultantView: React.FC = () => {
       setShowCamera(false);
       stopCamera();
     } catch (err) {
+      console.error("FieldConsultant analyse feil:", err);
       setError("AI-analysen feilet. Vennligst prøv klarere bilder.");
     } finally {
       setIsAnalyzing(false);

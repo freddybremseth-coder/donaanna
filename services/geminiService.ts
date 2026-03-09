@@ -307,8 +307,8 @@ Gi en kort norsk forklaring på hvorfor denne mengden er riktig.`,
     const ai = this.getAI();
     const imageParts = imagesBase64.map(data => ({ inlineData: { mimeType: 'image/jpeg', data } }));
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-pro',
-      contents: { parts: [...imageParts, { text: `Du er en olivenagronom med doktorgrad i Olea europaea og 30+ års felterfaring fra Andalucia, Toscana og Tunesia. Du konsulterer for profesjonelle olivenprodusenter.
+      model: 'gemini-2.5-flash',
+      contents: [{ role: 'user', parts: [...imageParts, { text: `Du er en olivenagronom med doktorgrad i Olea europaea og 30+ års felterfaring fra Andalucia, Toscana og Tunesia. Du konsulterer for profesjonelle olivenprodusenter.
 
 OPPGAVE: Gi en komplett, agronomi-faglig analyse som en seniorekspert ville levert til en kommersiell produsent.
 
@@ -357,8 +357,8 @@ Angi: lett vedlikehold, moderat renovasjon ELLER kraftig foryngelse (policing)
 • Er foryngelsesbeskjæring nødvendig?
 • Den ÉNE viktigste handlingen akkurat nå
 
-Svar i JSON.` }] },
-      config: { 
+Svar i JSON.` }] }],
+      config: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -419,7 +419,9 @@ Svar i JSON.` }] },
         }
       }
     });
-    return JSON.parse(response.text || "{}");
+    const text = response.text;
+    if (!text) throw new Error('Tom respons fra AI');
+    return JSON.parse(text);
   }
 
   async analyzeDrone(imagesBase64: string[], lang: string): Promise<DroneAnalysisResult> {
@@ -427,7 +429,7 @@ Svar i JSON.` }] },
     const imageParts = imagesBase64.map(data => ({ inlineData: { mimeType: 'image/jpeg', data } }));
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: { parts: [...imageParts, { text: `Du er en presisjonsjordbruksekspert med drone-analyse. Analyser dette luftbildet av en olivenlund.
+      contents: [{ role: 'user', parts: [...imageParts, { text: `Du er en presisjonsjordbruksekspert med drone-analyse. Analyser dette luftbildet av en olivenlund.
 
 Gi:
 - Kanonitettstetthet (%) og krondekning
@@ -438,7 +440,7 @@ Gi:
 - Identifiser mulige problemsoner (tørre flekker, sykdomsspredning, høydedifferanser)
 - Luftig sammendrag med agronomiske anbefalinger
 
-Svar i JSON.` }] },
+Svar i JSON.` }] }],
       config: { responseMimeType: "application/json" }
     });
     return JSON.parse(response.text || "{}");
@@ -447,8 +449,8 @@ Svar i JSON.` }] },
   async analyzePruning(image: string, lang: string): Promise<PruningPlan> {
     const ai = this.getAI();
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-pro',
-      contents: { parts: [{ inlineData: { mimeType: 'image/jpeg', data: image } }, { text: `Du er olivenbeskjæringsmester med ekspertise fra Spania, Italia og Marokko.
+      model: 'gemini-2.5-flash',
+      contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'image/jpeg', data: image } }, { text: `Du er olivenbeskjæringsmester med ekspertise fra Spania, Italia og Marokko.
 
 Lag en detaljert BESKJÆRINGSPLAN for dette treet:
 
@@ -468,7 +470,7 @@ Lag en detaljert BESKJÆRINGSPLAN for dette treet:
 
 4. VERKTØY: List spesifikke verktøy med begrunnelse
 
-Svar i JSON.` }] },
+Svar i JSON.` }] }],
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -498,7 +500,9 @@ Svar i JSON.` }] },
         }
       }
     });
-    return JSON.parse(response.text || "{}");
+    const text = response.text;
+    if (!text) throw new Error('Tom respons fra AI');
+    return JSON.parse(text);
   }
 
   async analyzeReceipt(base64Image: string): Promise<any> {

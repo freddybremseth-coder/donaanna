@@ -117,8 +117,9 @@ const PruningAdvisorView: React.FC = () => {
       if (result.recommendedDate) {
         setScheduledDate(result.recommendedDate);
       }
-    } catch (err) { 
-      setError("Beskjæringsanalysen feilet. Vennligst prøv et klarere bilde."); 
+    } catch (err) {
+      console.error("Beskjæring analyse feil:", err);
+      setError("Beskjæringsanalysen feilet. Vennligst prøv et klarere bilde.");
     }
     finally { setIsAnalyzing(false); }
   };
