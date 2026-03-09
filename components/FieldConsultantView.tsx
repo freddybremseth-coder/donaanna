@@ -101,6 +101,7 @@ const FieldConsultantView: React.FC = () => {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
+      setError(null);
       Array.from(files).forEach((file: File) => {
         const reader = new FileReader();
         reader.onloadend = () => {
