@@ -87,3 +87,74 @@ create policy "allow all harvest_records" on harvest_records for all using (true
 create policy "allow all farm_expenses"   on farm_expenses   for all using (true) with check (true);
 create policy "allow all subsidy_income"  on subsidy_income  for all using (true) with check (true);
 create policy "allow all farm_settings"   on farm_settings   for all using (true) with check (true);
+
+-- ── set_updated_at helper (used by user_profiles trigger below) ──────────────
+create or replace function set_updated_at()
+returns trigger as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$ language plpgsql;
+
+-- ── User profiles (Supabase Auth backing) ────────────────────────────────────
+-- Auto-populated by a trigger on auth.users insert. See
+-- supabase_migrations/003_auth_profiles.sql for the canonical migration.
+
+create table if not exists user_profiles (
+  id                  uuid primary key references auth.users(id) on delete cascade,
+  email               text not null,
+  name                text not null default '',
+  role                text not null default 'farmer',
+  subscription        text not null default 'trial',
+  subscription_start  text not null default to_char(now(), 'YYYY-MM-DD'),
+  avatar              text,
+  created_at          timestamptz default now(),
+  updated_at          timestamptz default now()
+);
+create index if not exists user_profiles_email_idx on user_profiles(email);
+
+alter table user_profiles enable row level security;
+
+create policy "self read" on user_profiles for select
+  using (auth.uid() = id or exists (
+    select 1 from user_profiles p where p.id = auth.uid() and p.role = 'super_admin'
+  ));
+create policy "self update" on user_profiles for update
+  using (auth.uid() = id) with check (auth.uid() = id);
+create policy "self insert" on user_profiles for insert
+  with check (auth.uid() = id);
+
+create or replace function handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.user_profiles (id, email, name, role, avatar)
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
+    coalesce(new.raw_user_meta_data->>'role', 'farmer'),
+    coalesce(
+      new.raw_user_meta_data->>'avatar',
+      'https://ui-avatars.com/api/?name=' ||
+        replace(coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)), ' ', '+') ||
+        '&background=22c55e&color=000&size=256'
+    )
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function handle_new_user();
+
+drop trigger if exists user_profiles_set_updated_at on user_profiles;
+create trigger user_profiles_set_updated_at before update on user_profiles
+  for each row execute function set_updated_at();
