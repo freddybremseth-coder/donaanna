@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
+import FarmOverview from './components/FarmOverview';
 import FarmMap from './components/FarmMap';
 import WeatherView from './components/WeatherView';
 import ProductionView from './components/ProductionView';
@@ -195,7 +196,14 @@ const App: React.FC = () => {
     if (isAdmin && activeTab === 'admin') return <AdminDashboard />;
 
     switch (activeTab) {
-      case 'dashboard': return <Dashboard language={language} weatherData={weatherData} locationName={locationName} />;
+      case 'dashboard': return <FarmOverview
+        language={language}
+        weatherData={weatherData}
+        locationName={selectedParcel?.name || locationName}
+        parcels={parcels}
+        onNavigate={setActiveTab}
+      />;
+      case 'dashboard_classic': return <Dashboard language={language} weatherData={weatherData} locationName={locationName} />;
       case 'consultant': return <FieldConsultantView />;
       case 'pruning': return <PruningAdvisorView />;
       case 'map': return <FarmMap parcels={parcels} onParcelSave={handleParcelSave} onParcelDelete={handleParcelDelete} language={language} />;
@@ -215,7 +223,13 @@ const App: React.FC = () => {
       case 'tasks': return <TasksView parcels={parcels} />;
       case 'iot': return <IoTDashboard />;
       case 'settings': return <SettingsView language={language} onLanguageChange={updateLanguage} />;
-      default: return <Dashboard language={language} weatherData={weatherData} locationName={locationName} />;
+      default: return <FarmOverview
+        language={language}
+        weatherData={weatherData}
+        locationName={selectedParcel?.name || locationName}
+        parcels={parcels}
+        onNavigate={setActiveTab}
+      />;
     }
   };
 
