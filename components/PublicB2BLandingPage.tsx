@@ -246,6 +246,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     ['Design', '#design'],
     ['Portfolio', '#portfolio'],
     ['Knowledge', '#knowledge'],
+    ['Magasin', '/magasin'],
     ['Traceability', '#traceability'],
     ['Specs', '#specs'],
     ['Tasting kit', '#tasting'],

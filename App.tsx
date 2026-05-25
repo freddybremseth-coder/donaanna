@@ -1,6 +1,7 @@
 
 import React, { Suspense, lazy, useState, useEffect } from 'react';
 import LandingPage from './components/PublicB2BLandingPage';
+import PublicContentPage, { isPublicContentPath } from './components/PublicContentPage';
 import LoginModal, { StoredUser } from './components/LoginModal';
 import ResetPasswordPage from './components/ResetPasswordPage';
 import { UserProfile, Language, Parcel } from './types';
@@ -236,6 +237,17 @@ const App: React.FC = () => {
   }
 
   if (showPublicSite) {
+    if (isPublicContentPath(window.location.pathname)) {
+      return (
+        <>
+          <PublicContentPage onLogin={() => openApp('login', 'commerce')} onAdminLogin={() => openApp('login', 'admin')} />
+          {showLogin && (
+            <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
+          )}
+        </>
+      );
+    }
+
     return (
       <>
         <LandingPage onLogin={() => openApp('login', 'commerce')} onAdminLogin={() => openApp('login', 'admin')} onRegister={() => openApp('register', 'commerce')} />
