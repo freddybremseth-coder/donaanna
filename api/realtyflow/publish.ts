@@ -104,14 +104,14 @@ export default async function handler(req: IncomingMessage & { method?: string }
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST,OPTIONS',
+      'Access-Control-Allow-Methods': 'POST,DELETE,OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-RealtyFlow-Secret',
     });
     res.end();
     return;
   }
 
-  if (req.method !== 'POST') {
+  if (!['POST', 'DELETE'].includes(req.method || '')) {
     json(res, 405, { error: 'Method not allowed' });
     return;
   }
@@ -133,6 +133,38 @@ export default async function handler(req: IncomingMessage & { method?: string }
     payload = JSON.parse(await readBody(req)) as RealtyFlowPayload;
   } catch {
     json(res, 400, { error: 'Invalid JSON body' });
+    return;
+  }
+
+  if (req.method === 'DELETE') {
+    const sourceSystem = cleanString(payload.source?.system) || 'realtyflow';
+    const sourceType = cleanString(payload.source?.type) || 'content';
+    const sourceId = cleanString(payload.source?.id || '');
+    const destination = payload.destination || {};
+    const destinationId = cleanString(destination.id) || 'artikler';
+    const brandId = cleanString(payload.brand?.id) || 'donaanna';
+    const slug = slugify(cleanString(payload.content?.slug) || cleanString(payload.content?.title));
+
+    let query = supabase.from('website_posts').delete();
+    if (sourceId) {
+      query = query
+        .eq('source_system', sourceSystem)
+        .eq('source_type', sourceType)
+        .eq('source_id', sourceId);
+    } else {
+      query = query
+        .eq('brand_id', brandId)
+        .eq('destination_id', destinationId)
+        .eq('slug', slug);
+    }
+
+    const { error } = await query;
+    if (error) {
+      json(res, 500, { error: error.message });
+      return;
+    }
+
+    json(res, 200, { success: true, deleted: true, slug });
     return;
   }
 
