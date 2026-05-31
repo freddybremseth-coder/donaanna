@@ -13,7 +13,7 @@
  * fresh Supabase project, or RLS policy denying the request).
  */
 
-import { supabase } from './supabaseClient';
+import { supabaseOlivia as supabase } from './supabaseClient';
 import type {
   Parcel, HarvestRecord, FarmExpense, SubsidyIncome,
   Batch, Recipe, Task, PruningHistoryItem,
@@ -38,8 +38,8 @@ function throwDbError(label: string, error: PostgrestError | { message: string; 
   }
   if (code === '42501' || /permission denied|rls/i.test(msg)) {
     throw new Error(
-      `Tilgang nektet av Supabase RLS. Sjekk at "allow all"-policyen ` +
-      `for denne tabellen er aktivert (se supabase_schema.sql).`
+      `Tilgang nektet av Supabase RLS. Sjekk at brukeren har riktig rolle ` +
+      `og at Olivia-tabellen ligger i olivia schema.`
     );
   }
   if (code === '23505') {

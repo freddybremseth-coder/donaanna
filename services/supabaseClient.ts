@@ -2,8 +2,23 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const LEGACY_SUPABASE_REF = 'jvcdkclfcaccogmvvkrs';
+const REQUIRED_SUPABASE_REF = 'ereapsfcsqtdmzosgnnn';
+const oliviaSchema = ((import.meta.env.VITE_OLIVIA_SUPABASE_SCHEMA as string | undefined) || 'olivia').trim() || 'olivia';
 const fallbackSupabaseUrl = 'http://127.0.0.1:54321';
 const fallbackSupabaseAnonKey = 'public-site-placeholder-key';
+
+function hasProjectRef(url: string | undefined, ref: string) {
+  return Boolean(url && url.includes(ref));
+}
+
+export const supabaseEnvStatus = {
+  urlConfigured: Boolean(supabaseUrl && supabaseUrl.startsWith('http')),
+  anonKeyConfigured: Boolean(supabaseAnonKey),
+  oliviaSchema,
+  legacyProjectDetected: hasProjectRef(supabaseUrl, LEGACY_SUPABASE_REF),
+  expectedProjectDetected: hasProjectRef(supabaseUrl, REQUIRED_SUPABASE_REF),
+};
 
 /**
  * True when both env vars are present at build time. If false, the UI shows
@@ -11,7 +26,9 @@ const fallbackSupabaseAnonKey = 'public-site-placeholder-key';
  * undefined URL (the common cause of "spinner never stops" on login).
  */
 export const isSupabaseConfigured: boolean = Boolean(
-  supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('http')
+  supabaseEnvStatus.urlConfigured &&
+  supabaseEnvStatus.anonKeyConfigured &&
+  !supabaseEnvStatus.legacyProjectDetected
 );
 
 if (!isSupabaseConfigured) {
@@ -19,9 +36,11 @@ if (!isSupabaseConfigured) {
   // from DevTools even when the UI banner is missed.
   // eslint-disable-next-line no-console
   console.warn(
-    '[Olivia] Supabase er ikke konfigurert. Sett VITE_SUPABASE_URL og ' +
-    'VITE_SUPABASE_ANON_KEY i Vercel (Environment Variables) og re-deploy ' +
-    'uten build-cache.'
+    supabaseEnvStatus.legacyProjectDetected
+      ? '[Olivia] Gammel gratis Supabase er blokkert. Sett VITE_SUPABASE_URL til RealtyFlow-prosjektet og VITE_OLIVIA_SUPABASE_SCHEMA=olivia.'
+      : '[Olivia] Supabase er ikke konfigurert. Sett VITE_SUPABASE_URL og ' +
+        'VITE_SUPABASE_ANON_KEY i Vercel (Environment Variables) og re-deploy ' +
+        'uten build-cache.'
   );
 }
 
@@ -68,12 +87,27 @@ export const supabase = createClient(
   isSupabaseConfigured ? supabaseUrl! : fallbackSupabaseUrl,
   isSupabaseConfigured ? supabaseAnonKey! : fallbackSupabaseAnonKey,
   {
-  auth: {
-    // Use the in-memory lock above instead of navigator.locks. See the
-    // comment on `inMemoryLock` for why.
-    lock: inMemoryLock,
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-  },
-});
+    auth: {
+      // Use the in-memory lock above instead of navigator.locks. See the
+      // comment on `inMemoryLock` for why.
+      lock: inMemoryLock,
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  });
+
+export const supabaseOlivia = createClient(
+  isSupabaseConfigured ? supabaseUrl! : fallbackSupabaseUrl,
+  isSupabaseConfigured ? supabaseAnonKey! : fallbackSupabaseAnonKey,
+  {
+    db: {
+      schema: oliviaSchema,
+    },
+    auth: {
+      lock: inMemoryLock,
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  });
