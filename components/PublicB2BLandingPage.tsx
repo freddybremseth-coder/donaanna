@@ -122,6 +122,34 @@ const specs = [
   ['Formater', '500 ml · 2 L · 5 L · bordoliven'],
 ];
 
+const b2bPackages = [
+  {
+    title: 'Chef tasting kit',
+    audience: 'Restaurant / hotell',
+    image: '/donaanna/product-design/cocina-viva-chef-pour.jpg',
+    text: 'Verde Vivo, Verde Alto og Mesa med produktark, batchhistorie og forslag til bruk på brød, tomat, fisk, grønnsaker og service.',
+  },
+  {
+    title: 'Restaurant startpakke',
+    audience: 'Kjøkken og bordservering',
+    image: '/donaanna/product-design/verde-vivo-terrace-close.jpg',
+    text: '500 ml finishing oils til bordet og Cocina Viva i større format for mise en place, varme retter og daglig bruk.',
+  },
+  {
+    title: 'Retail launch',
+    audience: 'Gourmetbutikk / import',
+    image: '/donaanna/product-design/full-product-lineup.jpg',
+    text: 'Hylleklar portefølje med produktbilder, norsk/spansk/engelsk tekst, QR-sporbarhet og tydelig premiumfortelling.',
+  },
+];
+
+const buyerProof: Array<{ icon: React.ElementType; title: string; text: string }> = [
+  { icon: Building2, title: 'B2B-priser', text: 'Egne vilkår for restaurant, butikk og distributør.' },
+  { icon: Package, title: 'Salgbare formater', text: '500 ml, bordoliven og 2 L / 5 L chef-format.' },
+  { icon: QrCode, title: 'QR-sporbarhet', text: 'Batchhistorie fra parsell og høsting til flaske.' },
+  { icon: ShieldCheck, title: 'Innkjøpsklar', text: 'Produktark, sensorikk og logistikkdata samlet.' },
+];
+
 const estateMoments = [
   {
     title: 'Biar-terroir',
@@ -248,6 +276,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     ['Knowledge', '#knowledge'],
     ['Magasin', '/magasin'],
     ['Traceability', '#traceability'],
+    ['B2B', '#b2b'],
     ['Specs', '#specs'],
     ['Tasting kit', '#tasting'],
   ];
@@ -263,14 +292,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <p className="text-[11px] uppercase tracking-[0.22em] text-[#d4af37]">Biar · Alicante</p>
             </div>
           </a>
-          <div className="hidden items-center gap-7 md:flex">
+          <div className="hidden items-center gap-5 lg:flex">
             {navLinks.map(([label, href]) => (
               <a key={href} href={href} className="text-xs uppercase tracking-[0.2em] text-white/62 transition hover:text-white">
                 {label}
               </a>
             ))}
           </div>
-          <div className="hidden items-center gap-2 md:flex">
+          <div className="hidden items-center gap-2 lg:flex">
             <button
               onClick={() => setLocale(locale === 'no' ? 'es' : locale === 'es' ? 'en' : 'no')}
               className="inline-flex h-10 items-center gap-2 border border-white/12 px-3 text-xs uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/8"
@@ -284,12 +313,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               {t.portal}
             </button>
           </div>
-          <button className="md:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label="Meny">
+          <button className="lg:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label="Meny">
             {menuOpen ? <X /> : <Menu />}
           </button>
         </div>
         {menuOpen && (
-          <div className="mx-auto max-w-7xl border-t border-white/10 py-4 md:hidden">
+          <div className="mx-auto max-w-7xl border-t border-white/10 py-4 lg:hidden">
             {navLinks.map(([label, href]) => (
               <a key={href} href={href} onClick={() => setMenuOpen(false)} className="block py-3 text-sm uppercase tracking-[0.2em] text-white/78">
                 {label}
@@ -623,6 +652,55 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
               Bestill tasting kit <ArrowRight size={17} />
             </a>
+          </div>
+        </section>
+
+        <section id="b2b" className="bg-[#f8f5ea] px-5 py-24 text-black md:px-8">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-12 grid gap-8 md:grid-cols-[0.78fr_1.22fr]">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#8a6a19]">B2B</p>
+                <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">En premium olje må være enkel å kjøpe inn.</h2>
+              </div>
+              <div className="self-end">
+                <p className="text-lg leading-8 text-black/66">
+                  Doña Anna presenteres som et ferdig kommersielt oppsett for kjøkken, butikk og import: tydelige pakker, produktark, batchsporbarhet, formatvalg og en første smaking som gjør beslutningen konkret.
+                </p>
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                  <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-black px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-[#8a6a19]">
+                    Start med tasting kit <ArrowRight size={17} />
+                  </a>
+                  <button onClick={onLogin} className="inline-flex h-12 items-center justify-center gap-2 border border-black/15 px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
+                    B2B portal <LockKeyhole size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-5 lg:grid-cols-3">
+              {b2bPackages.map(item => (
+                <article key={item.title} className="border border-black/10 bg-white">
+                  <div className="h-64 overflow-hidden bg-black">
+                    <img src={item.image} alt={item.title} className="h-full w-full object-cover transition duration-700 hover:scale-105" />
+                  </div>
+                  <div className="p-6">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-[#8a6a19]">{item.audience}</p>
+                    <h3 className="mt-3 font-serif text-3xl">{item.title}</h3>
+                    <p className="mt-4 leading-7 text-black/64">{item.text}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="mt-8 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {buyerProof.map(({ icon: Icon, title, text }) => (
+                <div key={title} className="border border-black/10 bg-white p-5">
+                  <Icon size={22} className="text-[#8a6a19]" />
+                  <p className="mt-5 font-serif text-2xl">{title}</p>
+                  <p className="mt-2 text-sm leading-6 text-black/62">{text}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 

@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
 import {
+  ArrowRight,
   BadgeEuro,
   Building2,
+  ChefHat,
   CheckCircle2,
+  ClipboardCheck,
   FileText,
   Globe2,
+  Handshake,
+  LineChart,
   Package,
   ReceiptText,
   Search,
@@ -12,6 +17,7 @@ import {
   ShoppingCart,
   Store,
   Truck,
+  Users,
 } from 'lucide-react';
 
 type CommerceTab = 'overview' | 'products' | 'customers' | 'orders' | 'invoices' | 'content';
@@ -49,6 +55,43 @@ const contentItems = [
   { name: 'Batch-fortelling', use: 'Tekst fra Olivia-produksjon til flaskens QR-side', owner: 'Olivia OS', status: 'Ny' },
 ];
 
+const buyerSegments = [
+  {
+    title: 'Restauranter',
+    icon: ChefHat,
+    target: 'Kjøkkensjef / sommelier',
+    pitch: 'Smaksprøve, 500 ml finishing oils og 5 L Cocina Viva for service.',
+    next: 'Send chef tasting kit',
+  },
+  {
+    title: 'Gourmetbutikker',
+    icon: Store,
+    target: 'Butikkeier / innkjøper',
+    pitch: 'Hylleklar produktfamilie med produktark, margin og QR-historie.',
+    next: 'Send prisliste og produktark',
+  },
+  {
+    title: 'Distributører',
+    icon: Truck,
+    target: 'Import / wholesale',
+    pitch: 'Volum, batchsporbarhet, logistikkdata og tydelig premiumposisjon.',
+    next: 'Book distribusjonssamtale',
+  },
+];
+
+const commercialActions = [
+  { label: 'Leads uten neste steg', value: '6', icon: Users, tone: 'text-sky-300 bg-sky-300/10' },
+  { label: 'Tasting kits klare', value: '18', icon: Package, tone: 'text-emerald-300 bg-emerald-300/10' },
+  { label: 'Tilbud må godkjennes', value: '2', icon: ClipboardCheck, tone: 'text-amber-300 bg-amber-300/10' },
+  { label: 'Oppfølging denne uken', value: '9', icon: Handshake, tone: 'text-rose-300 bg-rose-300/10' },
+];
+
+const offerStack = [
+  ['Tasting kit', '3 produkter · produktark · QR-demo', 'Lav terskel for første møte'],
+  ['Restaurant startpakke', '24 x 500 ml · 2 x 5 L · bordkort', 'Rask vei fra smaking til service'],
+  ['Retail launch', '72 flasker · hyllehistorie · SoMe-kit', 'Tydelig pakke for butikk og gave'],
+];
+
 const CommerceHub: React.FC = () => {
   const [activeTab, setActiveTab] = useState<CommerceTab>('overview');
 
@@ -66,9 +109,9 @@ const CommerceHub: React.FC = () => {
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-300">Doña Anna Commerce</p>
-          <h2 className="mt-2 text-3xl font-bold text-white">B2B, kundeportal, ordre og faktura samlet i Olivia OS</h2>
+          <h2 className="mt-2 text-3xl font-bold text-white">B2B-salg, kundeportal, ordre og faktura samlet i Olivia OS</h2>
           <p className="mt-2 max-w-3xl text-slate-400">
-            Dette er kontrollrommet som bør erstatte de gamle separate admin- og kundesidene: produktdata inn ett sted, ordre inn ett sted, faktura ut ett sted, og tekster gjenbrukes på web, e-post og QR.
+            Dette skal fungere som et kommersielt kontrollrom: bygg pipeline fra tasting kit til fast kunde, knytt ordre til batch, og gjenbruk produktfortelling på web, e-post, QR og produktark.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -98,6 +141,22 @@ const CommerceHub: React.FC = () => {
         ))}
       </div>
 
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {commercialActions.map(action => (
+          <div key={action.label} className="rounded-2xl border border-white/10 bg-black/20 p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{action.label}</p>
+                <p className="mt-2 text-2xl font-bold text-white">{action.value}</p>
+              </div>
+              <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${action.tone}`}>
+                <action.icon size={22} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-2">
         <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-6">
           {tabs.map(tab => (
@@ -115,35 +174,81 @@ const CommerceHub: React.FC = () => {
       </div>
 
       {activeTab === 'overview' && (
-        <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
-            <h3 className="text-xl font-bold text-white">Anbefalt sammenslåing</h3>
-            <div className="mt-5 space-y-4">
-              {[
-                ['Olivia OS', 'Gårdsdrift, parseller, høst, batch, kvalitet, oppgaver og sensorikk. Dette er kilden til sannheten.'],
-                ['Admin', 'Rettigheter, produktkatalog, priser, kundegrupper, tekster, ordre, faktura og publisering.'],
-                ['B2B/kundeportal', 'Innlogging for forhandlere og kunder med egne priser, ordrestatus, faktura, produktark og sporbarhet.'],
-                ['donaanna.com', 'Offentlig merkevare, produktfortelling, kunnskap, lead-skjema og QR-sider fra batchdata.'],
-              ].map(([title, text]) => (
-                <div key={title} className="flex gap-4 rounded-2xl border border-white/8 bg-black/20 p-4">
-                  <CheckCircle2 className="mt-1 text-green-300" size={20} />
-                  <div>
-                    <p className="font-bold text-white">{title}</p>
-                    <p className="mt-1 text-sm leading-6 text-slate-400">{text}</p>
-                  </div>
+        <div className="space-y-6">
+          <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+            <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-300">Kommersiell motor</p>
+                  <h3 className="mt-2 text-xl font-bold text-white">Selg Doña Anna som et profesjonelt konsept, ikke bare som enkeltflasker</h3>
                 </div>
-              ))}
+                <LineChart className="text-amber-300" size={28} />
+              </div>
+              <div className="mt-5 grid gap-4 lg:grid-cols-3">
+                {buyerSegments.map(segment => (
+                  <div key={segment.title} className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-300/10 text-amber-300">
+                        <segment.icon size={20} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-white">{segment.title}</p>
+                        <p className="text-xs text-slate-500">{segment.target}</p>
+                      </div>
+                    </div>
+                    <p className="mt-4 text-sm leading-6 text-slate-400">{segment.pitch}</p>
+                    <button className="mt-4 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-300">
+                      {segment.next} <ArrowRight size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-300">Tilbudspakker</p>
+              <h3 className="mt-2 text-xl font-bold text-white">Pakker som gjør kjøpsbeslutningen enklere</h3>
+              <div className="mt-5 space-y-3">
+                {offerStack.map(([title, content, purpose]) => (
+                  <div key={title} className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                    <p className="font-bold text-white">{title}</p>
+                    <p className="mt-1 text-sm text-slate-300">{content}</p>
+                    <p className="mt-2 text-xs uppercase tracking-widest text-slate-500">{purpose}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
-            <h3 className="text-xl font-bold text-white">Sømløs ordre-flyt</h3>
-            <div className="mt-5 space-y-3 text-sm text-slate-300">
-              {['B2B-kunde logger inn og ser egne priser', 'Ordre reserverer lager og knyttes til batch', 'Admin godkjenner, pakker og sender', 'Faktura genereres fra samme ordrelinjer', 'Kunde ser status, faktura og QR-sporbarhet'].map((step, index) => (
-                <div key={step} className="flex items-center gap-3 rounded-xl bg-black/20 p-3">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-300 text-xs font-bold text-black">{index + 1}</span>
-                  <span>{step}</span>
-                </div>
-              ))}
+
+          <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+            <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+              <h3 className="text-xl font-bold text-white">Anbefalt sammenslåing</h3>
+              <div className="mt-5 space-y-4">
+                {[
+                  ['Olivia OS', 'Gårdsdrift, parseller, høst, batch, kvalitet, oppgaver og sensorikk. Dette er kilden til sannheten.'],
+                  ['Admin', 'Rettigheter, produktkatalog, priser, kundegrupper, tekster, ordre, faktura og publisering.'],
+                  ['B2B/kundeportal', 'Innlogging for forhandlere og kunder med egne priser, ordrestatus, faktura, produktark og sporbarhet.'],
+                  ['donaanna.com', 'Offentlig merkevare, produktfortelling, kunnskap, lead-skjema og QR-sider fra batchdata.'],
+                ].map(([title, text]) => (
+                  <div key={title} className="flex gap-4 rounded-2xl border border-white/8 bg-black/20 p-4">
+                    <CheckCircle2 className="mt-1 text-green-300" size={20} />
+                    <div>
+                      <p className="font-bold text-white">{title}</p>
+                      <p className="mt-1 text-sm leading-6 text-slate-400">{text}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+              <h3 className="text-xl font-bold text-white">Sømløs ordre-flyt</h3>
+              <div className="mt-5 space-y-3 text-sm text-slate-300">
+                {['B2B-kunde logger inn og ser egne priser', 'Ordre reserverer lager og knyttes til batch', 'Admin godkjenner, pakker og sender', 'Faktura genereres fra samme ordrelinjer', 'Kunde ser status, faktura og QR-sporbarhet'].map((step, index) => (
+                  <div key={step} className="flex items-center gap-3 rounded-xl bg-black/20 p-3">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-300 text-xs font-bold text-black">{index + 1}</span>
+                    <span>{step}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
