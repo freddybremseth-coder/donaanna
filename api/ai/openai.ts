@@ -1,1 +1,1 @@
-export { default } from './openai/[...path]';
+export { openaiHandler as default } from '../../server/vercelProxyHandlers';

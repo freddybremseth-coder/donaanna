@@ -1,1 +1,1 @@
-export { default } from './gemini/[...path]';
+export { geminiHandler as default } from '../../server/vercelProxyHandlers';

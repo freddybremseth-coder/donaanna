@@ -1,1 +1,1 @@
-export { default } from './catastro/[...path]';
+export { catastroHandler as default } from '../server/vercelProxyHandlers';

@@ -1,1 +1,1 @@
-export { default } from './anthropic/[...path]';
+export { anthropicHandler as default } from '../../server/vercelProxyHandlers';
