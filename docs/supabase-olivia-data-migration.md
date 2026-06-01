@@ -81,6 +81,12 @@ without deleting target rows:
 - `commerce_order_items`: 2
 - `public.website_posts`: 4
 
+The old source project had no `batches` rows, so on 2026-06-01 the target
+`olivia.batches` table was populated with 7 deterministic batch records derived
+from the migrated `olivia.harvest_records` rows. The generated IDs use the
+`harvest-batch-<harvest id>` pattern and keep the original harvest row in
+`metadata.source_id`.
+
 The copy skipped the old Auth user and `public.user_profiles` row on purpose.
 The target project already has its own user/profile model across `core`,
 `family` and `public`, so those records should not be overwritten blindly.

@@ -20,6 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import { fetchPublicEstateSignal, PublicEstateSignal } from '../services/publicEstate';
+import { fetchPublicCommerceProducts, type PublicCommerceProduct } from '../services/publicCommerce';
 
 interface LandingPageProps {
   onLogin: () => void;
@@ -254,6 +255,7 @@ const formatNumber = (value: number) => new Intl.NumberFormat('no-NO').format(va
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegister }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [locale, setLocale] = useState<Locale>('no');
+  const [livePortfolio, setLivePortfolio] = useState<PublicCommerceProduct[]>([]);
   const [signal, setSignal] = useState<PublicEstateSignal>({
     isLive: false,
     parcelCount: 2,
@@ -267,7 +269,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
   useEffect(() => {
     fetchPublicEstateSignal().then(setSignal);
+    fetchPublicCommerceProducts().then(setLivePortfolio);
   }, []);
+
+  const portfolioItems = livePortfolio.length ? livePortfolio : portfolio;
 
   const navLinks = [
     ['Estate', '#estate'],
@@ -495,7 +500,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             </p>
           </div>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {portfolio.map(item => (
+            {portfolioItems.map(item => (
               <article key={item.name} className="group border border-white/10 bg-white/[0.035] p-4 transition hover:border-[#d4af37]/50">
                 <div className="grid gap-3">
                   <div className="h-72 overflow-hidden bg-[#080808]">
@@ -507,6 +512,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   <h3 className="mt-2 font-serif text-3xl">{item.name}</h3>
                   <p className="mt-3 border-y border-white/10 py-3 text-[10px] font-bold uppercase tracking-[0.24em] text-white/72">{item.labelName}</p>
                   <p className="mt-1 text-xs uppercase tracking-[0.2em] text-white/48">{item.format}</p>
+                  {'priceLabel' in item && (
+                    <div className="mt-4 grid grid-cols-2 gap-2 border-y border-white/10 py-3">
+                      <div>
+                        <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-[#d4af37]">Pris</p>
+                        <p className="mt-1 text-sm text-white/80">{item.priceLabel}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-[#d4af37]">Lager</p>
+                        <p className="mt-1 text-sm text-white/80">{item.stockLabel}</p>
+                      </div>
+                    </div>
+                  )}
                   <p className="mt-4 leading-7 text-white/64">{item.text}</p>
                 </div>
               </article>

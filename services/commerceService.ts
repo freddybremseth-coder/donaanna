@@ -18,6 +18,20 @@ export interface CommerceQuoteResult {
   notificationSaved: boolean;
 }
 
+export interface CommerceAdminSummary {
+  products: number;
+  activeProducts: number;
+  stockUnits: number;
+  orders: number;
+  openOrders: number;
+  orderValue: number;
+  customers: number;
+  invoices: number;
+  unpaidInvoices: number;
+  recentOrders: CommerceRow[];
+  recentCustomers: CommerceRow[];
+}
+
 const moneyFormatter = new Intl.NumberFormat('nb-NO', {
   style: 'currency',
   currency: 'EUR',
@@ -86,6 +100,65 @@ export async function fetchCommerceRows(): Promise<{ orders: CommerceRow[]; cust
   return {
     orders: (orders.data || []).map(orderToRow),
     customers: (customers.data || []).map(customerToRow),
+  };
+}
+
+export async function fetchCommerceAdminSummary(): Promise<CommerceAdminSummary> {
+  const empty: CommerceAdminSummary = {
+    products: 0,
+    activeProducts: 0,
+    stockUnits: 0,
+    orders: 0,
+    openOrders: 0,
+    orderValue: 0,
+    customers: 0,
+    invoices: 0,
+    unpaidInvoices: 0,
+    recentOrders: [],
+    recentCustomers: [],
+  };
+
+  if (!isSupabaseConfigured) return empty;
+
+  const [products, orders, customers, invoices] = await Promise.all([
+    supabaseOlivia
+      .from('commerce_products')
+      .select('id,stock,stock_quantity,active,status'),
+    supabaseOlivia
+      .from('commerce_orders')
+      .select('*')
+      .order('created_at', { ascending: false }),
+    supabaseOlivia
+      .from('commerce_customers')
+      .select('*')
+      .order('created_at', { ascending: false }),
+    supabaseOlivia
+      .from('commerce_invoices')
+      .select('id,payment_status,invoice_total,total_amount,status'),
+  ]);
+
+  if (products.error) console.warn('[commerce] fetch products summary', products.error);
+  if (orders.error) console.warn('[commerce] fetch orders summary', orders.error);
+  if (customers.error) console.warn('[commerce] fetch customers summary', customers.error);
+  if (invoices.error) console.warn('[commerce] fetch invoices summary', invoices.error);
+
+  const productRows = products.data || [];
+  const orderRows = orders.data || [];
+  const customerRows = customers.data || [];
+  const invoiceRows = invoices.data || [];
+
+  return {
+    products: productRows.length,
+    activeProducts: productRows.filter(row => row.active !== false && row.status !== 'archived').length,
+    stockUnits: productRows.reduce((sum, row) => sum + Number(row.stock_quantity ?? row.stock ?? 0), 0),
+    orders: orderRows.length,
+    openOrders: orderRows.filter(row => !['delivered', 'completed', 'cancelled', 'paid'].includes(text(row.status).toLowerCase())).length,
+    orderValue: orderRows.reduce((sum, row) => sum + Number(row.total_amount || 0), 0),
+    customers: customerRows.length,
+    invoices: invoiceRows.length,
+    unpaidInvoices: invoiceRows.filter(row => !['paid', 'betalt'].includes(text(row.payment_status || row.status).toLowerCase())).length,
+    recentOrders: orderRows.slice(0, 8).map(orderToRow),
+    recentCustomers: customerRows.slice(0, 8).map(customerToRow),
   };
 }
 
