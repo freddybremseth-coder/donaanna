@@ -38,9 +38,9 @@ of a blind table replacement.
 The old project `jvcdkclfcaccogmvvkrs` was reachable through Supabase CLI, but
 no Olivia/Doña Anna application tables were found in public schema.
 
-The separate Supabase project named `Dona Anna` (`dlssxpiysmrbbqzvpjzb`) is
-paused. It must be unpaused in the Supabase dashboard before its tables/data can
-be inspected or copied.
+The separate Supabase project named `Dona Anna` (`dlssxpiysmrbbqzvpjzb`) still
+reported as paused from Supabase CLI on 2026-06-01. It must finish restoring in
+the Supabase dashboard before its tables/data can be inspected or copied.
 
 ## Copy Options
 
