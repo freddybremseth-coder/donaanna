@@ -55,31 +55,53 @@ It also has one Auth user and a public Storage bucket named
 `commerce-product-images` with 4 objects. This is the source project to copy
 from for Olivia farm, product, B2B order and recipe history.
 
-The shared target project `ereapsfcsqtdmzosgnnn` already has the mapped
-`olivia` tables, but the key Olivia tables are still empty except for one
-default `olivia.farm_settings` row. It does not currently have a
+Before the data copy, the shared target project `ereapsfcsqtdmzosgnnn` already
+had the mapped `olivia` tables, but the key Olivia tables were empty except for
+one default `olivia.farm_settings` row. It also did not have a
 `commerce-product-images` Storage bucket.
 
 The separate Supabase project named `Dona Anna` (`dlssxpiysmrbbqzvpjzb`) still
 reported as paused from Supabase CLI on 2026-06-01. It must finish restoring in
 the Supabase dashboard before its tables/data can be inspected or copied.
 
-## Copy Options
+## Copy Completed
 
-Copy from `jvcdkclfcaccogmvvkrs.public` to
-`ereapsfcsqtdmzosgnnn.olivia` for the app-owned farm and commerce tables.
-Most tables can be copied directly. `commerce_products` needs a mapped copy
-because the old table has storefront fields such as `collections`,
-`price_label`, `label_material`, `accent_color` and `is_public`; preserve those
-fields in `metadata` and map public/active state carefully.
+On 2026-06-01 the Olivia app data was copied from
+`jvcdkclfcaccogmvvkrs.public` to `ereapsfcsqtdmzosgnnn.olivia` with upserts and
+without deleting target rows:
 
-Copy the `commerce-product-images` Storage bucket and its 4 objects to the
-target project before relying on product cards in the B2B UI.
+- `parcels`: 7
+- `recipes`: 50
+- `harvest_records`: 7
+- `farm_expenses`: 3
+- `tasks`: 5
+- `commerce_products`: 5
+- `commerce_customers`: 1
+- `commerce_orders`: 2
+- `commerce_order_items`: 2
+- `public.website_posts`: 4
 
-`website_posts` should be copied to the target `public.website_posts` only if
-those posts belong in RealtyFlow/Content Hub. `user_profiles` should be handled
-carefully because the target already has profile tables in more than one
-schema. Do not blindly overwrite auth/profile rows.
+The copy skipped the old Auth user and `public.user_profiles` row on purpose.
+The target project already has its own user/profile model across `core`,
+`family` and `public`, so those records should not be overwritten blindly.
+
+The target Storage bucket `commerce-product-images` was created as public, and
+the 4 source product images were copied with the same object paths. Product
+image URLs in `olivia.commerce_products` now point at
+`ereapsfcsqtdmzosgnnn.supabase.co`.
+
+A REST/API smoke test with the app's anon key confirmed that the copied Olivia
+tables are readable through the `olivia` schema and that a migrated product
+image returns HTTP 200.
+
+## Remaining Checks
+
+Confirm in RealtyFlow/Content Hub that the 4 copied `public.website_posts`
+belong there and are using the intended publication status.
+
+`user_profiles` should still be handled carefully because the target already
+has profile tables in more than one schema. Do not blindly overwrite
+auth/profile rows.
 
 If additional records are still missing after this project copy, then check the
 separate Supabase project named `Dona Anna` (`dlssxpiysmrbbqzvpjzb`) or the old
