@@ -3,13 +3,25 @@ import https from 'https';
 
 const CATASTRO_HOST = 'ovc.catastro.meh.es';
 
+function getForwardPath(req: IncomingMessage & { url: string }, prefix: string, fallback: string) {
+  const raw = req.url ?? fallback;
+  const url = new URL(raw, 'https://olivia.local');
+  const rewrittenPath = url.searchParams.get('path');
+  if (rewrittenPath) {
+    url.searchParams.delete('path');
+    const path = rewrittenPath.startsWith('/') ? rewrittenPath : `/${rewrittenPath}`;
+    const query = url.searchParams.toString();
+    return query ? `${path}?${query}` : path;
+  }
+  return raw.replace(new RegExp(`^${prefix}`), '') || fallback;
+}
+
 export default function handler(
   req: IncomingMessage & { url: string },
   res: ServerResponse
 ) {
   // Extract path + query string after /api/catastro
-  const raw = req.url ?? '/';
-  const withoutPrefix = raw.replace(/^\/api\/catastro/, '') || '/';
+  const withoutPrefix = getForwardPath(req, '/api/catastro', '/');
 
   const options: https.RequestOptions = {
     hostname: CATASTRO_HOST,

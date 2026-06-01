@@ -17,6 +17,19 @@ import { URL } from 'url';
 
 const UPSTREAM_HOST = 'generativelanguage.googleapis.com';
 
+function getForwardPath(req: IncomingMessage & { url: string }, prefix: string, fallback: string) {
+  const raw = req.url ?? fallback;
+  const url = new URL(raw, 'https://olivia.local');
+  const rewrittenPath = url.searchParams.get('path');
+  if (rewrittenPath) {
+    url.searchParams.delete('path');
+    const path = rewrittenPath.startsWith('/') ? rewrittenPath : `/${rewrittenPath}`;
+    const query = url.searchParams.toString();
+    return query ? `${path}?${query}` : path;
+  }
+  return raw.replace(new RegExp(`^${prefix}`), '') || fallback;
+}
+
 function readBody(req: IncomingMessage): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
@@ -49,8 +62,7 @@ export default async function handler(
   }
 
   // Build upstream URL: drop the /api/ai/gemini prefix, force key=…
-  const raw = req.url ?? '/';
-  const withoutPrefix = raw.replace(/^\/api\/ai\/gemini/, '') || '/';
+  const withoutPrefix = getForwardPath(req, '/api/ai/gemini', '/');
   const upstream = new URL(`https://${UPSTREAM_HOST}${withoutPrefix}`);
   upstream.searchParams.set('key', apiKey);
 
