@@ -11,7 +11,7 @@
  *   - upsertProfile(profile)
  */
 
-import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { supabase, supabaseOlivia, isSupabaseConfigured } from './supabaseClient';
 import type { UserProfile } from '../types';
 
 /**
@@ -67,7 +67,7 @@ function rowToProfile(row: any, fallbackEmail = ''): UserProfile {
 }
 
 export async function fetchProfile(userId: string, fallbackEmail = ''): Promise<UserProfile | null> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseOlivia
     .from('user_profiles')
     .select('*')
     .eq('id', userId)
@@ -81,7 +81,7 @@ export async function fetchProfile(userId: string, fallbackEmail = ''): Promise<
 }
 
 export async function upsertProfile(profile: UserProfile): Promise<void> {
-  const { error } = await supabase
+  const { error } = await supabaseOlivia
     .from('user_profiles')
     .upsert({
       id: profile.id,
