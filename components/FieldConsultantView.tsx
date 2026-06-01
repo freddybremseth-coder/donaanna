@@ -8,13 +8,35 @@ import {
   Save, ArrowUpDown, MapPin, Filter, Scale, FlaskConical, Droplets, Upload
 } from 'lucide-react';
 import { geminiService, ComprehensiveAnalysisResult, DroneAnalysisResult } from '../services/geminiService';
-import { Task, PruningHistoryItem, Parcel } from '../types';
+import { PruningHistoryItem, Parcel } from '../types';
 import { Language } from '../services/i18nService';
 import { filesToResizedDataUrls } from '../lib/imageUpload';
 import GlossaryText from './GlossaryText';
+import {
+  fetchPruningHistory, upsertPruningItem, deletePruningItem,
+  fetchParcels,
+} from '../services/db';
 
 type ResultTab = 'health' | 'pruning' | 'drone';
 type SortKey = 'date' | 'parcel' | 'type';
+
+const confidencePercent = (value?: number) => {
+  const n = Number(value ?? 0);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(100, Math.round(n <= 1 ? n * 100 : n)));
+};
+
+const qualityLabel = (quality?: string) => {
+  if (quality === 'GOOD') return 'Godt bildegrunnlag';
+  if (quality === 'LIMITED') return 'Begrenset bildegrunnlag';
+  return 'Utilstrekkelig bildegrunnlag';
+};
+
+const qualityTone = (quality?: string) => {
+  if (quality === 'GOOD') return 'bg-green-500/10 text-green-300 border-green-500/20';
+  if (quality === 'LIMITED') return 'bg-amber-500/10 text-amber-300 border-amber-500/20';
+  return 'bg-red-500/10 text-red-300 border-red-500/20';
+};
 
 const FieldConsultantView: React.FC = () => {
   const [images, setImages] = useState<string[]>([]);
@@ -43,22 +65,23 @@ const FieldConsultantView: React.FC = () => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  useEffect(() => {
+  const loadData = async () => {
     const settings = localStorage.getItem('olivia_settings');
     if (settings) {
       const parsed = JSON.parse(settings);
       setLanguage(parsed.language || 'no');
     }
 
-    const savedHistory = localStorage.getItem('olivia_consultant_history');
-    if (savedHistory) setHistory(JSON.parse(savedHistory));
-
-    const savedParcels = localStorage.getItem('olivia_parcels');
-    if (savedParcels) {
-      const parsed = JSON.parse(savedParcels);
-      setParcels(parsed);
-      if (parsed.length > 0) setSelectedParcelId(parsed[0].id);
+    const [hist, prc] = await Promise.all([fetchPruningHistory(), fetchParcels()]);
+    setHistory(hist);
+    setParcels(prc);
+    if (prc.length > 0 && !selectedParcelId) {
+      setSelectedParcelId(prc[0].id);
     }
+  };
+
+  useEffect(() => {
+    loadData();
     
     startCamera();
     return () => stopCamera();
@@ -149,19 +172,20 @@ const FieldConsultantView: React.FC = () => {
     }
   };
 
-  const saveAnalysis = () => {
+  const saveAnalysis = async () => {
     if (!analysisResult || images.length === 0) return;
 
     try {
       const newItem: PruningHistoryItem = {
         id: Date.now().toString(),
         date: new Date().toISOString(),
-        images: [images[0]], 
+        images,
         treeType: analysisResult.diagnosis?.variety || 'Ukjent sort',
         ageEstimate: analysisResult.pruning?.ageEstimate || 'Ukjent alder',
         analysis: {
           diagnosis: analysisResult.diagnosis,
           pruning: analysisResult.pruning,
+          expertReport: analysisResult.expertReport,
           varietyConfidence: analysisResult.varietyConfidence || 0,
           needsMoreImages: analysisResult.needsMoreImages || false,
           missingDetails: analysisResult.missingDetails || []
@@ -169,9 +193,8 @@ const FieldConsultantView: React.FC = () => {
         parcelId: selectedParcelId
       };
 
-      const updatedHistory = [newItem, ...history];
-      setHistory(updatedHistory);
-      localStorage.setItem('olivia_consultant_history', JSON.stringify(updatedHistory));
+      await upsertPruningItem(newItem);
+      setHistory(prev => [newItem, ...prev]);
       
       // Send varsel til andre komponenter
       window.dispatchEvent(new Event('storage'));
@@ -201,12 +224,11 @@ const FieldConsultantView: React.FC = () => {
     }
   };
 
-  const deleteHistoryItem = (id: string, e: React.MouseEvent) => {
+  const deleteHistoryItem = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!confirm("Slette denne analysen fra historikken?")) return;
-    const updated = history.filter(item => item.id !== id);
-    setHistory(updated);
-    localStorage.setItem('olivia_consultant_history', JSON.stringify(updated));
+    await deletePruningItem(id);
+    setHistory(prev => prev.filter(item => item.id !== id));
   };
 
   const sortedHistory = useMemo(() => {
@@ -260,7 +282,7 @@ const FieldConsultantView: React.FC = () => {
           <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
             <Sparkles className="text-green-400" /> AI Feltkonsulent
           </h2>
-          <p className="text-slate-400 text-sm">Alt-i-ett diagnose og beskjæringsekspert.</p>
+          <p className="text-slate-400 text-sm">Felt-triage for oliven i Biar, Alicante.</p>
         </div>
         
         {analysisResult && (
@@ -287,6 +309,12 @@ const FieldConsultantView: React.FC = () => {
              </button>
           </div>
         )}
+      </div>
+      <div className="glass rounded-2xl p-4 border border-amber-500/20 bg-amber-500/5 flex items-start gap-3">
+        <Info size={18} className="text-amber-300 mt-0.5 flex-shrink-0" />
+        <p className="text-xs text-amber-100/80 leading-relaxed">
+          Appen skal ikke bruke AI som sortsbevis. Sort, alder, sykdom, vanning og avling markeres som ukjent når bildegrunnlaget ikke er godt nok.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -329,7 +357,7 @@ const FieldConsultantView: React.FC = () => {
           <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar min-h-[88px] items-center">
             {images.map((img, i) => (
               <div key={i} className="relative flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border border-white/10 group">
-                <img src={img} className="w-full h-full object-cover" />
+                <img src={img} className="w-full h-full object-cover" alt={`Analysebilde ${i + 1}`} />
                 <button onClick={() => removeImage(i)} className="absolute top-1 right-1 p-1 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 active:opacity-100 transition-opacity">
                   <X size={12} />
                 </button>
@@ -408,7 +436,14 @@ const FieldConsultantView: React.FC = () => {
                       <span className="text-[10px] font-bold text-yellow-400 uppercase tracking-widest">Sort-Identifisering</span>
                     </div>
                     <h3 className="text-3xl font-bold text-white tracking-tight">{analysisResult.diagnosis?.variety || 'Ukjent sort'}</h3>
-                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mt-1">Sikkerhet: {Math.round((analysisResult.varietyConfidence || 0) * 100)}%</p>
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <span className="text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-full border border-white/10 bg-white/5 text-slate-300">
+                        Sort-sikkerhet {confidencePercent(analysisResult.varietyConfidence)}%
+                      </span>
+                      <span className={`text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-full border ${qualityTone(analysisResult.pruning?.observationQuality)}`}>
+                        {qualityLabel(analysisResult.pruning?.observationQuality)}
+                      </span>
+                    </div>
                   </div>
                   <div className={`p-4 rounded-2xl ${analysisResult.diagnosis?.condition === 'SUNN' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                     {analysisResult.diagnosis?.condition === 'SUNN' ? <CheckCircle2 size={32} /> : <AlertTriangle size={32} />}
@@ -420,7 +455,7 @@ const FieldConsultantView: React.FC = () => {
                     <Info size={20} className="shrink-0" />
                     <div>
                       <p className="font-bold uppercase tracking-widest text-[10px] mb-1 text-orange-400">Usikkerhet observert</p>
-                      <p className="opacity-80 italic">For 100% sikkerhet trengs: {analysisResult.missingDetails?.join(", ") || 'flere bilder'}.</p>
+                      <p className="opacity-80 italic">For høyere sikkerhet trengs: {analysisResult.missingDetails?.join(", ") || 'flere bilder'}.</p>
                     </div>
                   </div>
                 )}
@@ -530,8 +565,19 @@ const FieldConsultantView: React.FC = () => {
                   <div className="glass p-4 rounded-2xl border border-white/10 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1"><Clock size={11}/> Estimert alder</span>
-                      <span className="text-xs font-bold text-blue-300">{analysisResult.pruning.ageEstimate}</span>
+                      <span className="text-xs font-bold text-blue-300">{analysisResult.pruning.ageEstimate} · {confidencePercent(analysisResult.pruning.ageConfidence)}%</span>
                     </div>
+                    {(analysisResult.pruning.limitations?.length || analysisResult.pruning.missingDetails?.length) ? (
+                      <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+                        <p className="text-[10px] font-bold text-amber-300 uppercase tracking-widest mb-1">Kontrollpunkt</p>
+                        {analysisResult.pruning.limitations?.length ? (
+                          <p className="text-xs text-amber-100/80 leading-relaxed">Begrensninger: {analysisResult.pruning.limitations.join('; ')}</p>
+                        ) : null}
+                        {analysisResult.pruning.missingDetails?.length ? (
+                          <p className="text-xs text-amber-100/80 leading-relaxed">Mangler: {analysisResult.pruning.missingDetails.join('; ')}</p>
+                        ) : null}
+                      </div>
+                    ) : null}
                     {analysisResult.pruning.timingAdvice && (
                       <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
                         <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Optimal timing</p>
@@ -542,6 +588,11 @@ const FieldConsultantView: React.FC = () => {
 
                   <div className="glass rounded-2xl p-5 border border-white/10 space-y-3">
                     <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Beskjæringsplan — trykk for å markere punkt</h4>
+                    {(analysisResult.pruning.pruningSteps || []).length === 0 && (
+                      <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-100 text-sm leading-relaxed">
+                        Ingen sikre snittpunkter ble anbefalt fra dette bildegrunnlaget. Ta nye bilder før beskjæring.
+                      </div>
+                    )}
                     {analysisResult.pruning.pruningSteps?.map((step, i) => (
                       <div
                         key={i}
@@ -563,6 +614,11 @@ const FieldConsultantView: React.FC = () => {
                             {step.priority === 'HØY' && <span className="text-[8px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded font-bold">KRITISK</span>}
                           </div>
                           <p className="text-sm text-slate-300 leading-relaxed">{step.action}</p>
+                          {(step.confidence || step.evidence) && (
+                            <p className="text-[10px] text-slate-500 mt-2">
+                              {step.confidence ? `Sikkerhet ${confidencePercent(step.confidence)}%. ` : ''}{step.evidence || ''}
+                            </p>
+                          )}
                         </div>
                       </div>
                     ))}

@@ -14,6 +14,24 @@ import {
 } from '../services/db';
 import { fileToResizedDataUrl } from '../lib/imageUpload';
 
+const confidencePercent = (value?: number) => {
+  const n = Number(value ?? 0);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(100, Math.round(n <= 1 ? n * 100 : n)));
+};
+
+const qualityLabel = (quality?: string) => {
+  if (quality === 'GOOD') return 'Godt bildegrunnlag';
+  if (quality === 'LIMITED') return 'Begrenset bildegrunnlag';
+  return 'Utilstrekkelig bildegrunnlag';
+};
+
+const qualityTone = (quality?: string) => {
+  if (quality === 'GOOD') return 'bg-green-500/10 text-green-300 border-green-500/20';
+  if (quality === 'LIMITED') return 'bg-amber-500/10 text-amber-300 border-amber-500/20';
+  return 'bg-red-500/10 text-red-300 border-red-500/20';
+};
+
 const PruningAdvisorView: React.FC = () => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -247,13 +265,19 @@ const PruningAdvisorView: React.FC = () => {
           <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
             <Scissors className="text-green-400" /> AI Beskjæringsekspert
           </h2>
-          <p className="text-slate-400 text-sm italic">Analyser treets arkitektur og planlegg vedlikehold</p>
+          <p className="text-slate-400 text-sm italic">Profesjonell triage for oliventrær i Biar, Alicante</p>
         </div>
         {(capturedImage || error) && (
           <button onClick={reset} className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-xs font-bold transition-all border border-white/10">
             <RefreshCcw size={16} /> Ny analyse
           </button>
         )}
+      </div>
+      <div className="glass rounded-2xl p-4 border border-amber-500/20 bg-amber-500/5 flex items-start gap-3">
+        <Info size={18} className="text-amber-300 mt-0.5 flex-shrink-0" />
+        <p className="text-xs text-amber-100/80 leading-relaxed">
+          Sort og alder fastslås bare når bildegrunnlaget støtter det. Ved usikkerhet skal analysen svare ukjent og be om flere bilder i stedet for å gjette.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -352,6 +376,17 @@ const PruningAdvisorView: React.FC = () => {
                   <div>
                     <h3 className="text-2xl font-bold text-white tracking-tight">{plan.treeType}</h3>
                     <p className="text-green-400 text-xs font-bold uppercase tracking-widest mt-1">Estimert alder: {plan.ageEstimate}</p>
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${qualityTone(plan.observationQuality)}`}>
+                        {qualityLabel(plan.observationQuality)}
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-white/10 bg-white/5 text-slate-300">
+                        Plan-sikkerhet {confidencePercent(plan.confidence)}%
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-white/10 bg-white/5 text-slate-300">
+                        Alder {confidencePercent(plan.ageConfidence)}%
+                      </span>
+                    </div>
                   </div>
                   <div className="p-4 bg-green-500/10 rounded-2xl border border-green-500/20">
                     <Scissors size={28} className="text-green-400" />
@@ -389,12 +424,34 @@ const PruningAdvisorView: React.FC = () => {
                 </div>
               )}
 
+              {(plan.limitations?.length || plan.missingDetails?.length || plan.safetyNotes?.length) ? (
+                <div className="glass rounded-2xl p-4 border border-amber-500/20 bg-amber-500/5 space-y-3">
+                  <p className="text-[10px] font-bold text-amber-300 uppercase tracking-widest flex items-center gap-1">
+                    <AlertTriangle size={12} /> Kontroll før arbeid
+                  </p>
+                  {plan.limitations?.length ? (
+                    <p className="text-xs text-amber-100/80 leading-relaxed">Begrensninger: {plan.limitations.join('; ')}</p>
+                  ) : null}
+                  {plan.missingDetails?.length ? (
+                    <p className="text-xs text-amber-100/80 leading-relaxed">Mangler: {plan.missingDetails.join('; ')}</p>
+                  ) : null}
+                  {plan.safetyNotes?.length ? (
+                    <p className="text-xs text-amber-100/80 leading-relaxed">Sikkerhet: {plan.safetyNotes.join('; ')}</p>
+                  ) : null}
+                </div>
+              ) : null}
+
               <div className="glass rounded-3xl p-6 border border-white/10">
                 <h4 className="text-sm font-bold text-white mb-4 flex items-center justify-between">
                    <div className="flex items-center gap-2"><Layers size={16} className="text-slate-400" /> Handlingsplan</div>
                    <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest hidden sm:block">Trykk for å markere</span>
                 </h4>
                 <div className="space-y-3">
+                  {(plan.pruningSteps || []).length === 0 && (
+                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-100 text-sm leading-relaxed">
+                      Ingen sikre snittpunkter ble anbefalt fra dette bildet. Ta et nytt bilde som viser hele treet, stammebasis og hovedgreiner før du beskjærer.
+                    </div>
+                  )}
                   {(plan.pruningSteps || []).map((step, i) => (
                     <div
                       key={i}
@@ -418,6 +475,11 @@ const PruningAdvisorView: React.FC = () => {
                            {step.priority === 'HØY' && <span className="text-[8px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded font-bold">KRITISK</span>}
                          </div>
                          <p className="text-sm text-slate-400 leading-relaxed">{step.action}</p>
+                         {(step.confidence || step.evidence) && (
+                           <p className="text-[10px] text-slate-500 mt-2">
+                             {step.confidence ? `Sikkerhet ${confidencePercent(step.confidence)}%. ` : ''}{step.evidence || ''}
+                           </p>
+                         )}
                        </div>
                     </div>
                   ))}

@@ -1,5 +1,5 @@
 
-import { PruningPlan, PlantDiagnosis } from './services/geminiService';
+import { ExpertOliveReport, PruningPlan, PlantDiagnosis } from './services/geminiService';
 
 export type Language = 'en' | 'no' | 'es';
 
@@ -65,6 +65,7 @@ export interface Parcel {
 export interface ComprehensiveAnalysis {
   diagnosis: PlantDiagnosis;
   pruning: PruningPlan;
+  expertReport?: ExpertOliveReport;
   varietyConfidence: number;
   needsMoreImages: boolean;
   missingDetails: string[];
@@ -304,4 +305,3 @@ export interface SubsidyIncome {
   amount: number;        // EUR
   description: string;
 }
-
