@@ -1,1 +1,1 @@
-export { catastroHandler as default } from '../../server/vercelProxyHandlers';
+export { catastroHandler as default } from '../../server/vercelProxyHandlers.js';
