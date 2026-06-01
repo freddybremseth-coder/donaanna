@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "sync:recipes": "node scripts/syncTableOliveRecipes.mjs",
     "preview": "vite preview",
     "start": "vite",
     "stop": "echo \"Stopping development server\""

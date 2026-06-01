@@ -333,7 +333,7 @@ export async function fetchRecipes(): Promise<Recipe[]> {
     .select('*')
     .order('created_at', { ascending: true });
   if (error) { console.error('fetchRecipes', error); return []; }
-  return (data ?? []).map(rowToRecipe);
+  return (data ?? []).map(rowToRecipe).sort(sortRecipes);
 }
 
 export async function upsertRecipe(r: Recipe): Promise<void> {
@@ -476,6 +476,16 @@ function rowToRecipe(r: any): Recipe {
     isAiGenerated: !!r.is_ai_generated,
     isQualityAssured: !!r.is_quality_assured,
   };
+}
+
+function sortRecipes(a: Recipe, b: Recipe) {
+  const recipeNumber = (id: string) => {
+    const match = /^default-r(\d+)$/.exec(id);
+    return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
+  };
+  const byCuratedOrder = recipeNumber(a.id) - recipeNumber(b.id);
+  if (byCuratedOrder !== 0) return byCuratedOrder;
+  return a.name.localeCompare(b.name, 'nb');
 }
 
 function recipeToRow(r: Recipe) {

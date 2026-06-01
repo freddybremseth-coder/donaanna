@@ -45,6 +45,7 @@ const VARIETIES = ['Gordal', 'Changlot Real', 'Genoesa', 'Picual', 'Arbequina', 
 const currentSeason = () => new Date().getFullYear().toString();
 
 const STAGES: TableOliveStage[] = ['PLUKKING', 'LAKE', 'SKYLLING', 'MARINERING', 'LAGRING', 'PAKKING', 'SALG'];
+const RECIPE_FILTERS: FlavorFilter[] = ['all', 'mild', 'syrlig', 'krydret', 'urterik', 'sitrus', 'hvitlok', 'middelhav'];
 
 interface ProductionViewProps {
   language: Language;
@@ -388,7 +389,12 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
   const archivedBatches = batches.filter(b => b.status === 'ARCHIVED');
   const filteredRecipes = recipes.filter(r => {
     const matchesProfile = flavorFilter === 'all' || r.flavorProfile === flavorFilter;
-    const matchesSearch = !recipeSearch || r.name.toLowerCase().includes(recipeSearch.toLowerCase());
+    const q = recipeSearch.toLowerCase().trim();
+    const matchesSearch = !q
+      || r.name.toLowerCase().includes(q)
+      || (r.description || '').toLowerCase().includes(q)
+      || (r.recommendedOliveTypes || []).some(type => type.toLowerCase().includes(q))
+      || (r.ingredients || []).some(ing => ing.name.toLowerCase().includes(q));
     return matchesProfile && matchesSearch;
   });
   const batchesInStage = (stage: TableOliveStage) => activeBatches.filter(b => b.currentStage === stage);
@@ -705,10 +711,10 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
               />
             </div>
             <div className="flex gap-1 overflow-x-auto">
-              {(['all', 'mild', 'syrlig', 'krydret', 'urterik'] as const).map(f => (
+              {RECIPE_FILTERS.map(f => (
                 <button key={f} onClick={() => setFlavorFilter(f as FlavorFilter)}
                   className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${flavorFilter === f ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-slate-800 text-slate-400 border border-white/10 hover:text-white'}`}>
-                  {f === 'all' ? t('all') || 'Alle' : f}
+                  {f === 'all' ? t('all') || 'Alle' : FLAVOR_PROFILE_LABELS[f] || f}
                 </button>
               ))}
             </div>
@@ -721,12 +727,23 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
                   {recipe.isAiGenerated && <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full flex-shrink-0 ml-2">AI</span>}
                 </div>
                 {recipe.description && <p className="text-xs text-slate-400 mb-2 flex-1 line-clamp-2">{recipe.description}</p>}
+                <div className="flex flex-wrap gap-1.5 mb-3 text-[10px]">
+                  {recipe.readyAfterDays ? (
+                    <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-300 px-2 py-0.5 rounded-full">
+                      <Timer size={10} /> {recipe.readyAfterDays} dager
+                    </span>
+                  ) : null}
+                  {(recipe.recommendedOliveTypes || []).slice(0, 2).map(type => (
+                    <span key={type} className="bg-amber-500/10 text-amber-200 px-2 py-0.5 rounded-full">{type}</span>
+                  ))}
+                </div>
                 <div className="flex flex-wrap gap-1 mb-3">
                   {(recipe.ingredients || []).slice(0, 4).map((ing, i) => (
                     <span key={i} className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">{ing.name}</span>
                   ))}
                   {(recipe.ingredients || []).length > 4 && <span className="text-[10px] text-slate-500">+{recipe.ingredients.length - 4}</span>}
                 </div>
+                {recipe.notes && <p className="text-[11px] text-slate-500 mb-3 line-clamp-3">{recipe.notes}</p>}
                 <div className="flex items-center justify-between mt-auto pt-2 border-t border-white/5">
                   <span className={`text-xs px-2 py-0.5 rounded-full ${recipe.flavorProfile ? 'bg-green-500/10 text-green-400' : 'bg-slate-700 text-slate-400'}`}>
                     {recipe.flavorProfile || 'standard'}

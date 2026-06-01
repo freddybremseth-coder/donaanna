@@ -490,16 +490,26 @@ export class GeminiService {
       ? `\n\nMARKEDSMÅL: ${flavorContext[flavorTarget]}`
       : '';
 
-    const fullPrompt = `Du er en ekspert på produksjon av bordoliven og matvaresikkerhet med 20 års erfaring fra Spania og Italia.
+    const fullPrompt = `Du er en ekspert på produksjon av bordoliven, sensorikk og matvaresikkerhet med 20 års erfaring fra Spania, Italia, Hellas og Nord-Afrika.
 
 Juster denne oppskriften for bordoliven basert på brukerens ønske.
 Alle mengder skal være per 1 liter saltlake/marinade (standardisert basis).
+Forutsetning: oliven er allerede korrekt avbitret/kurert før smaksmarinade, med mindre oppskriften uttrykkelig gjelder basis-kurering.
 
 Nåværende oppskrift: ${JSON.stringify(currentRecipe)}
 
 Brukerens ønske: "${prompt}"${marketNote}
 
-Returner justert oppskrift med eksakte mengder. Tenk på balanse mellom salt, syre, fett og aromater.
+Returner justert oppskrift med eksakte mengder. Bruk denne balansemodellen:
+- Salt: ikke senk basis-salt/syre til et nivå som gjør oppskriften utrygg; gi heller mer aroma, olje eller serveringsinstruks.
+- Syre: sitron, eddik, sumak eller konservert sitron skal løfte friskhet og kontrollere tung olje/hvitløk/chili.
+- Fett: olivenolje runder hvitløk, chili og bitre oliven, men må balanseres med syre.
+- Sødme: honning/sukker/frukt skal bare runde skarphet, ikke gjøre bordoliven søte, med mindre brukeren ber om det.
+- Bitterhet/umami: kapers, ansjos, sorte oliven og krydder krever ofte lavere salt eller mer sitrus.
+- Varme/chili: hvis brukeren ber om sterkere blanding, ikke øk chili alene. Kompenser med litt mer syre/friskhet, olje, urter og eventuelt 2-8 g sødme per liter.
+- Aromater: hold hvitløk, rosmarin og røkt paprika kraftige nok til identitet, men ikke så høye at de skjuler olivens egen smak.
+
+I notes skal du gi konkrete produksjonsinstruksjoner: blanding, hviletid, lagring og hva som skal smakes/justeres før pakking.
 Svar i JSON med feltene: name, description, flavorProfile, ingredients (array av {name, amount, unit}), notes, readyAfterDays.`;
 
     return this.runWithFallback<Partial<Recipe>>(
@@ -557,7 +567,7 @@ Svar i JSON med feltene: name, description, flavorProfile, ingredients (array av
       middelhav: 'klassisk middelhavsstil med olivenolje og urter',
     };
 
-    const fullPrompt = `Du er ekspert på produksjon av bordoliven med 20 års erfaring.
+    const fullPrompt = `Du er ekspert på produksjon av bordoliven, sensorikk og matvaresikkerhet med 20 års erfaring.
 
 Nåværende oppskrift (per 1 liter saltlake): ${JSON.stringify(currentIngredients)}
 Batch-størrelse: ${batchKg} kg oliven
@@ -566,6 +576,8 @@ Ingredient som skal legges til: ${ingredientName}
 
 Foreslå eksakt mengde av "${ingredientName}" per 1 liter saltlake for å oppnå god smaksbalanse.
 Husk matvaresikkerhet og typiske mengder i profesjonell olivenproduksjon.
+Vurder hele oppskriften: salt, syre, olje/fett, sødme, bitterhet, umami, urter, hvitløk og chili.
+Hvis ingrediensen øker varme, bitterhet, salt eller rå hvitløksstyrke, forklar kort hvilken motbalanse som bør sjekkes (for eksempel mer sitron/eddik, mer olje, mer urter eller 2-8 g honning/sukker per liter).
 Gi en kort norsk forklaring på hvorfor denne mengden er riktig.
 
 Svar i JSON med feltene: amount (string), unit (string), rationale (string).`;
