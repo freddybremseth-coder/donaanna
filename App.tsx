@@ -1,5 +1,5 @@
 
-import React, { Suspense, lazy, useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import LandingPage from './components/PublicB2BLandingPage';
 import PublicContentPage, { isPublicContentPath } from './components/PublicContentPage';
 import LoginModal, { StoredUser } from './components/LoginModal';
@@ -36,18 +36,35 @@ function isRecoveryUrl(): boolean {
   return /type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search);
 }
 
+const AuthLoadingScreen: React.FC = () => (
+  <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center px-6">
+    <div className="flex flex-col items-center gap-4 text-center">
+      <div className="h-10 w-10 rounded-full border-2 border-green-400/30 border-t-green-400 animate-spin" />
+      <div>
+        <p className="text-sm font-semibold text-green-300">Kontrollerer innlogging</p>
+        <p className="mt-1 text-xs text-slate-500">Henter lagret Supabase-økt...</p>
+      </div>
+    </div>
+  </div>
+);
+
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isAuthReady, setIsAuthReady] = useState<boolean>(() => isRecoveryUrl());
   const [showPublicSite, setShowPublicSite] = useState(() => {
     if (typeof window === 'undefined') return true;
     return window.location.pathname !== '/app' && !isRecoveryUrl();
   });
   const [language, setLanguage] = useState<Language>('no');
-  const [showLogin, setShowLogin] = useState(false);
+  const [showLogin, setShowLogin] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.location.pathname === '/app' && !isRecoveryUrl();
+  });
   const [loginDefaultMode, setLoginDefaultMode] = useState<'login' | 'register'>('login');
   const [postLoginTab, setPostLoginTab] = useState('dashboard');
+  const postLoginTabRef = useRef('dashboard');
   const [isPasswordRecovery, setIsPasswordRecovery] = useState<boolean>(isRecoveryUrl);
 
   const [weatherData, setWeatherData] = useState<any>(null);
@@ -72,6 +89,15 @@ const App: React.FC = () => {
   const [parcels, setParcels] = useState<Parcel[]>(DEFAULT_PARCELS);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(DEFAULT_PARCELS[0]);
   const [parcelsLoaded, setParcelsLoaded] = useState(false);
+
+  const rememberPostLoginTab = (targetTab: string) => {
+    postLoginTabRef.current = targetTab;
+    setPostLoginTab(targetTab);
+  };
+
+  const resolveTargetTab = (targetTab: string, admin: boolean) => (
+    targetTab === 'admin' && !admin ? 'commerce' : targetTab
+  );
 
   // Load parcels from Supabase on mount + run one-time localStorage migration
   useEffect(() => {
@@ -148,6 +174,9 @@ const App: React.FC = () => {
   // Supabase auth: hydrate from stored session on load + subscribe to changes.
   useEffect(() => {
     let cancelled = false;
+    const markAuthReady = () => {
+      if (!cancelled) setIsAuthReady(true);
+    };
     // Skip hydration if we're in the recovery flow — we don't want to land the
     // user on the dashboard before they've chosen a new password.
     if (!isRecoveryUrl()) {
@@ -156,13 +185,20 @@ const App: React.FC = () => {
         setUser(result.user);
         setIsAdmin(result.isAdmin);
         setIsLoggedIn(true);
-      });
+        setShowLogin(false);
+        setActiveTab(resolveTargetTab(postLoginTabRef.current, result.isAdmin));
+      }).catch(err => {
+        console.warn('[auth] session hydration failed:', err);
+      }).finally(markAuthReady);
+    } else {
+      markAuthReady();
     }
     // Single shared subscription for both sign-in/out and PASSWORD_RECOVERY —
     // see auth.ts for why this matters (gotrue lock contention).
     const unsubscribe = onAuthChange(
       result => {
         if (cancelled) return;
+        setIsAuthReady(true);
         if (result) {
           setUser(result.user);
           setIsAdmin(result.isAdmin);
@@ -175,6 +211,7 @@ const App: React.FC = () => {
       },
       () => {
         if (cancelled) return;
+        setIsAuthReady(true);
         setIsPasswordRecovery(true);
       },
     );
@@ -187,7 +224,8 @@ const App: React.FC = () => {
     setUser(storedUser);
     setIsAdmin(admin);
     setIsLoggedIn(true);
-    setActiveTab(postLoginTab === 'admin' && !admin ? 'commerce' : postLoginTab);
+    setIsAuthReady(true);
+    setActiveTab(resolveTargetTab(postLoginTab, admin));
     setShowLogin(false);
   };
 
@@ -195,6 +233,7 @@ const App: React.FC = () => {
     await authSignOut();
     setIsLoggedIn(false);
     setIsAdmin(false);
+    setIsAuthReady(true);
     setActiveTab('dashboard');
     // Wipe any legacy localStorage session left over from the old flow
     localStorage.removeItem('olivia_session');
@@ -211,7 +250,7 @@ const App: React.FC = () => {
     if (typeof window !== 'undefined' && window.location.pathname !== '/app') {
       window.history.pushState({}, '', '/app');
     }
-    setPostLoginTab(targetTab);
+    rememberPostLoginTab(targetTab);
     setLoginDefaultMode(mode);
     setShowLogin(true);
   };
@@ -221,9 +260,14 @@ const App: React.FC = () => {
     if (typeof window !== 'undefined' && window.location.pathname !== '/app') {
       window.history.pushState({}, '', '/app');
     }
-    setPostLoginTab(targetTab);
+    rememberPostLoginTab(targetTab);
     if (isLoggedIn) {
-      setActiveTab(targetTab === 'admin' && !isAdmin ? 'commerce' : targetTab);
+      setActiveTab(resolveTargetTab(targetTab, isAdmin));
+      return;
+    }
+    if (!isAuthReady) {
+      setLoginDefaultMode(mode);
+      setShowLogin(true);
       return;
     }
     openLogin(mode, targetTab);
@@ -256,6 +300,10 @@ const App: React.FC = () => {
         )}
       </>
     );
+  }
+
+  if (!isAuthReady) {
+    return <AuthLoadingScreen />;
   }
 
   if (!isLoggedIn) {

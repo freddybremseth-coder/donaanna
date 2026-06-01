@@ -69,14 +69,15 @@ async function inMemoryLock<R>(
   const prev = (memLocks.get(name) ?? Promise.resolve()) as Promise<unknown>;
   let release: () => void = () => {};
   const next = new Promise<void>((r) => { release = r; });
-  memLocks.set(name, prev.then(() => next));
+  const queued = prev.catch(() => undefined).then(() => next);
+  memLocks.set(name, queued);
   try { await prev; } catch { /* ignore */ }
   try {
     return await fn();
   } finally {
     release();
     // Clean up so the map doesn't grow unbounded.
-    if (memLocks.get(name) === prev.then(() => next)) memLocks.delete(name);
+    if (memLocks.get(name) === queued) memLocks.delete(name);
   }
 }
 
@@ -97,17 +98,8 @@ export const supabase = createClient(
     },
   });
 
-export const supabaseOlivia = createClient(
-  isSupabaseConfigured ? supabaseUrl! : fallbackSupabaseUrl,
-  isSupabaseConfigured ? supabaseAnonKey! : fallbackSupabaseAnonKey,
-  {
-    db: {
-      schema: oliviaSchema,
-    },
-    auth: {
-      lock: inMemoryLock,
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-  });
+// Use the same Supabase client for Olivia schema calls. Creating a second
+// `createClient()` instance creates a second GoTrue auth owner on the same
+// page, which can contend for the same stored session and make login appear
+// slow or inconsistent.
+export const supabaseOlivia = supabase.schema(oliviaSchema);
