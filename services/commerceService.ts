@@ -179,16 +179,7 @@ export async function createCommerceQuote(input: CommerceQuoteInput): Promise<Co
     throw new Error('Firma, kontaktperson og e-post må fylles ut.');
   }
 
-  const existing = await supabaseOlivia
-    .from('commerce_customers')
-    .select('*')
-    .eq('email', email)
-    .limit(1);
-
-  if (existing.error) throw existing.error;
-
-  const existingCustomer = existing.data?.[0];
-  const customerId = text(existingCustomer?.id) || makeId('cust');
+  const customerId = makeId('cust');
   const customerPayload = {
     id: customerId,
     name: contactName,
@@ -198,8 +189,8 @@ export async function createCommerceQuote(input: CommerceQuoteInput): Promise<Co
     customer_type: 'b2b',
     price_tier: 'b2b',
     payment_terms: 'Avtales',
-    status: existingCustomer?.status || 'lead',
-    notes: notes || existingCustomer?.notes || null,
+    status: 'lead',
+    notes: notes || null,
     metadata: {
       source: 'olivia-commerce',
       lastPackage: packageName,
@@ -208,9 +199,7 @@ export async function createCommerceQuote(input: CommerceQuoteInput): Promise<Co
 
   const customerWrite = await supabaseOlivia
     .from('commerce_customers')
-    .upsert(customerPayload, { onConflict: 'id' })
-    .select('*')
-    .single();
+    .insert(customerPayload);
 
   if (customerWrite.error) throw customerWrite.error;
 
@@ -236,9 +225,7 @@ export async function createCommerceQuote(input: CommerceQuoteInput): Promise<Co
 
   const orderWrite = await supabaseOlivia
     .from('commerce_orders')
-    .insert(orderPayload)
-    .select('*')
-    .single();
+    .insert(orderPayload);
 
   if (orderWrite.error) throw orderWrite.error;
 
@@ -253,7 +240,7 @@ export async function createCommerceQuote(input: CommerceQuoteInput): Promise<Co
       severity: 'high',
       channel_targets: ['realtyflow', 'email', 'dashboard'],
       status: 'new',
-      related_order_id: orderWrite.data.id,
+      related_order_id: orderPayload.id,
       related_customer_id: customerId,
       payload: {
         company,
@@ -269,8 +256,8 @@ export async function createCommerceQuote(input: CommerceQuoteInput): Promise<Co
   else console.warn('[commerce] notification not saved', notification.error);
 
   return {
-    orderRow: orderToRow(orderWrite.data),
-    customerRow: customerToRow(customerWrite.data),
+    orderRow: orderToRow(orderPayload),
+    customerRow: customerToRow(customerPayload),
     notificationSaved,
   };
 }

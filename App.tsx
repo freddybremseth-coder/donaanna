@@ -36,6 +36,31 @@ function isRecoveryUrl(): boolean {
   return /type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search);
 }
 
+const LEGACY_APP_PATH = '/app';
+const B2B_PORTAL_PATH = '/b2b';
+const OLIVIA_OS_PATH = '/olivia';
+
+function currentPath(): string {
+  if (typeof window === 'undefined') return '/';
+  return window.location.pathname;
+}
+
+function isB2BUrl(): boolean {
+  return currentPath() === B2B_PORTAL_PATH;
+}
+
+function isOliviaUrl(): boolean {
+  return currentPath() === OLIVIA_OS_PATH || currentPath() === LEGACY_APP_PATH;
+}
+
+function isPortalUrl(): boolean {
+  return isB2BUrl() || isOliviaUrl();
+}
+
+function pathForTargetTab(targetTab: string): string {
+  return targetTab === 'commerce' ? B2B_PORTAL_PATH : OLIVIA_OS_PATH;
+}
+
 const AuthLoadingScreen: React.FC = () => (
   <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center px-6">
     <div className="flex flex-col items-center gap-4 text-center">
@@ -55,16 +80,16 @@ const App: React.FC = () => {
   const [isAuthReady, setIsAuthReady] = useState<boolean>(() => isRecoveryUrl());
   const [showPublicSite, setShowPublicSite] = useState(() => {
     if (typeof window === 'undefined') return true;
-    return window.location.pathname !== '/app' && !isRecoveryUrl();
+    return !isPortalUrl() && !isRecoveryUrl();
   });
   const [language, setLanguage] = useState<Language>('no');
   const [showLogin, setShowLogin] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return window.location.pathname === '/app' && !isRecoveryUrl();
+    return isPortalUrl() && !isRecoveryUrl();
   });
   const [loginDefaultMode, setLoginDefaultMode] = useState<'login' | 'register'>('login');
-  const [postLoginTab, setPostLoginTab] = useState('dashboard');
-  const postLoginTabRef = useRef('dashboard');
+  const [postLoginTab, setPostLoginTab] = useState(() => isB2BUrl() ? 'commerce' : 'dashboard');
+  const postLoginTabRef = useRef(isB2BUrl() ? 'commerce' : 'dashboard');
   const [isPasswordRecovery, setIsPasswordRecovery] = useState<boolean>(isRecoveryUrl);
 
   const [weatherData, setWeatherData] = useState<any>(null);
@@ -96,7 +121,7 @@ const App: React.FC = () => {
   };
 
   const resolveTargetTab = (targetTab: string, admin: boolean) => (
-    targetTab === 'admin' && !admin ? 'commerce' : targetTab
+    targetTab === 'admin' && !admin ? 'dashboard' : targetTab
   );
 
   // Load parcels from Supabase on mount + run one-time localStorage migration
@@ -225,7 +250,7 @@ const App: React.FC = () => {
     setIsAdmin(admin);
     setIsLoggedIn(true);
     setIsAuthReady(true);
-    setActiveTab(resolveTargetTab(postLoginTab, admin));
+    setActiveTab(resolveTargetTab(postLoginTabRef.current, admin));
     setShowLogin(false);
   };
 
@@ -247,8 +272,9 @@ const App: React.FC = () => {
 
   const openLogin = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => {
     setShowPublicSite(false);
-    if (typeof window !== 'undefined' && window.location.pathname !== '/app') {
-      window.history.pushState({}, '', '/app');
+    const targetPath = pathForTargetTab(targetTab);
+    if (typeof window !== 'undefined' && window.location.pathname !== targetPath) {
+      window.history.pushState({}, '', targetPath);
     }
     rememberPostLoginTab(targetTab);
     setLoginDefaultMode(mode);
@@ -257,8 +283,9 @@ const App: React.FC = () => {
 
   const openApp = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => {
     setShowPublicSite(false);
-    if (typeof window !== 'undefined' && window.location.pathname !== '/app') {
-      window.history.pushState({}, '', '/app');
+    const targetPath = pathForTargetTab(targetTab);
+    if (typeof window !== 'undefined' && window.location.pathname !== targetPath) {
+      window.history.pushState({}, '', targetPath);
     }
     rememberPostLoginTab(targetTab);
     if (isLoggedIn) {
@@ -284,9 +311,9 @@ const App: React.FC = () => {
     if (isPublicContentPath(window.location.pathname)) {
       return (
         <>
-          <PublicContentPage onLogin={() => openApp('login', 'commerce')} onAdminLogin={() => openApp('login', 'admin')} />
+          <PublicContentPage onLogin={() => openApp('login', 'commerce')} onAdminLogin={() => openApp('login', 'dashboard')} />
           {showLogin && (
-            <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
+            <LoginModal defaultMode={loginDefaultMode} allowRegister={postLoginTabRef.current === 'commerce'} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
           )}
         </>
       );
@@ -294,9 +321,9 @@ const App: React.FC = () => {
 
     return (
       <>
-        <LandingPage onLogin={() => openApp('login', 'commerce')} onAdminLogin={() => openApp('login', 'admin')} onRegister={() => openApp('register', 'commerce')} />
+        <LandingPage onLogin={() => openApp('login', 'commerce')} onAdminLogin={() => openApp('login', 'dashboard')} onRegister={() => openApp('register', 'commerce')} />
         {showLogin && (
-          <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
+          <LoginModal defaultMode={loginDefaultMode} allowRegister={postLoginTabRef.current === 'commerce'} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
         )}
       </>
     );
@@ -309,9 +336,9 @@ const App: React.FC = () => {
   if (!isLoggedIn) {
     return (
       <>
-        <LandingPage onLogin={() => openLogin('login', 'commerce')} onAdminLogin={() => openLogin('login', 'admin')} onRegister={() => openLogin('register', 'commerce')} />
+        <LandingPage onLogin={() => openLogin('login', 'commerce')} onAdminLogin={() => openLogin('login', 'dashboard')} onRegister={() => openLogin('register', 'commerce')} />
         {showLogin && (
-          <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
+            <LoginModal defaultMode={loginDefaultMode} allowRegister={postLoginTabRef.current === 'commerce'} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
         )}
       </>
     );

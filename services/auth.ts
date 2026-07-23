@@ -3,7 +3,7 @@
  *
  * Replaces the localStorage-only login flow. Public surface:
  *   - signInWithPassword(email, password)
- *   - signUpWithPassword(email, password, name, adminCode?)
+ *   - signUpWithPassword(email, password, name)
  *   - signOut()
  *   - getSession()
  *   - onAuthChange(handler)  — wraps onAuthStateChange
@@ -43,11 +43,6 @@ function assertConfigured(): void {
     );
   }
 }
-
-// Hard-coded admin enrolment code (same value as the legacy localStorage flow).
-// On signup the value is sent in user_metadata.role = 'super_admin' and the
-// handle_new_user() trigger persists it.
-const ADMIN_CODE = 'OLIVIA-ADMIN-2024';
 
 export interface AuthResult {
   user: UserProfile;
@@ -114,16 +109,16 @@ export async function signInWithPassword(email: string, password: string): Promi
 
   const profile = await fetchProfile(data.user.id, data.user.email ?? email);
   if (!profile) {
-    // Auth user exists but trigger didn't run — fall back to a minimal profile
+    // Auth user exists but no Olivia profile is readable. Keep the user in a
+    // non-internal role instead of creating an elevated farm profile in-browser.
     const fallback: UserProfile = {
       id: data.user.id,
       email: data.user.email ?? email,
       name: (data.user.user_metadata?.name as string) || (data.user.email ?? '').split('@')[0],
-      role: 'farmer',
+      role: 'b2b_customer',
       subscription: 'trial',
       subscriptionStart: new Date().toISOString().slice(0, 10),
     };
-    await upsertProfile(fallback);
     return { user: fallback, isAdmin: false };
   }
   return { user: profile, isAdmin: profile.role === 'super_admin' };
@@ -133,10 +128,8 @@ export async function signUpWithPassword(
   email: string,
   password: string,
   name: string,
-  adminCode?: string,
 ): Promise<AuthResult> {
   assertConfigured();
-  const isAdmin = adminCode === ADMIN_CODE;
   let data: Awaited<ReturnType<typeof supabase.auth.signUp>>['data'];
   try {
     const res = await withTimeout(
@@ -146,7 +139,6 @@ export async function signUpWithPassword(
         options: {
           data: {
             name,
-            role: isAdmin ? 'super_admin' : 'farmer',
           },
         },
       }),
@@ -172,7 +164,7 @@ export async function signUpWithPassword(
     id: data.user.id,
     email,
     name,
-    role: isAdmin ? 'super_admin' : 'farmer',
+    role: 'b2b_customer',
     subscription: 'trial',
     subscriptionStart: new Date().toISOString().slice(0, 10),
     avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=22c55e&color=000&size=256`,
@@ -259,7 +251,7 @@ export async function getCurrentSession(): Promise<AuthResult | null> {
       id: userId,
       email,
       name: (data.session.user.user_metadata?.name as string) || email.split('@')[0],
-      role: 'farmer',
+      role: 'b2b_customer',
       subscription: 'trial',
       subscriptionStart: new Date().toISOString().slice(0, 10),
     };
@@ -302,7 +294,7 @@ export function onAuthChange(
           id: session.user.id,
           email: session.user.email ?? '',
           name: (session.user.user_metadata?.name as string) || (session.user.email ?? '').split('@')[0],
-          role: 'farmer',
+          role: 'b2b_customer',
           subscription: 'trial',
           subscriptionStart: new Date().toISOString().slice(0, 10),
         },

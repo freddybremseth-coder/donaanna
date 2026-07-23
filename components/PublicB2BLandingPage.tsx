@@ -312,7 +312,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <Languages size={15} /> {locale.toUpperCase()}
             </button>
             <button onClick={onAdminLogin} className="inline-flex h-10 items-center gap-2 border border-white/12 px-3 text-xs uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/8">
-              <LockKeyhole size={15} /> Admin
+              <LockKeyhole size={15} /> Olivia OS
             </button>
             <button onClick={onLogin} className="inline-flex h-10 items-center gap-2 bg-white px-4 text-xs font-bold uppercase tracking-[0.18em] text-black transition hover:bg-[#d4af37]">
               {t.portal}
