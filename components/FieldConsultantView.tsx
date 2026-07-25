@@ -20,6 +20,8 @@ import {
 type ResultTab = 'health' | 'pruning' | 'drone';
 type SortKey = 'date' | 'parcel' | 'type';
 
+const MAX_ANALYSIS_IMAGES = 6;
+
 const confidencePercent = (value?: number) => {
   const n = Number(value ?? 0);
   if (!Number.isFinite(n)) return 0;
@@ -62,7 +64,7 @@ const FieldConsultantView: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   const loadData = async () => {
@@ -89,11 +91,17 @@ const FieldConsultantView: React.FC = () => {
 
   const startCamera = async () => {
     try {
+      stopCamera();
+      setShowCamera(true);
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setError("Kamera er ikke tilgjengelig i denne nettleseren. Last opp bilder i stedet.");
+        return;
+      }
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
         video: { facingMode: 'environment' }, 
         audio: false 
       });
-      setStream(mediaStream);
+      streamRef.current = mediaStream;
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
@@ -104,14 +112,25 @@ const FieldConsultantView: React.FC = () => {
   };
 
   const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
   };
 
   const capturePhoto = () => {
+    if (images.length >= MAX_ANALYSIS_IMAGES) {
+      setError(`Maks ${MAX_ANALYSIS_IMAGES} bilder per analyse. Fjern et bilde før du legger til flere.`);
+      return;
+    }
     if (videoRef.current && canvasRef.current) {
+      if (!videoRef.current.videoWidth || !videoRef.current.videoHeight) {
+        setError("Kameraet er ikke klart ennå. Vent et øyeblikk eller last opp bilder.");
+        return;
+      }
       const context = canvasRef.current.getContext('2d');
       if (context) {
         canvasRef.current.width = videoRef.current.videoWidth;
@@ -119,6 +138,7 @@ const FieldConsultantView: React.FC = () => {
         context.drawImage(videoRef.current, 0, 0);
         const base64 = canvasRef.current.toDataURL('image/jpeg', 0.8);
         setImages(prev => [...prev, base64]);
+        setError(null);
       }
     }
   };
@@ -135,11 +155,20 @@ const FieldConsultantView: React.FC = () => {
     setIsUploading(true);
     setError(null);
     try {
-      const dataUrls = await filesToResizedDataUrls(files);
+      const remainingSlots = MAX_ANALYSIS_IMAGES - images.length;
+      if (remainingSlots <= 0) {
+        setError(`Maks ${MAX_ANALYSIS_IMAGES} bilder per analyse. Fjern et bilde før du legger til flere.`);
+        return;
+      }
+      const selectedFiles = Array.from(files).slice(0, remainingSlots);
+      const dataUrls = await filesToResizedDataUrls(selectedFiles);
       if (dataUrls.length === 0) {
         setError('Ingen av bildene kunne leses.');
       } else {
         setImages(prev => [...prev, ...dataUrls]);
+        if (files.length > remainingSlots) {
+          setError(`Tok med de første ${remainingSlots} bildene. Maks er ${MAX_ANALYSIS_IMAGES} per analyse.`);
+        }
       }
     } catch (err: any) {
       setError(`Kunne ikke laste opp bilde: ${err?.message || String(err)}`);
@@ -152,13 +181,17 @@ const FieldConsultantView: React.FC = () => {
 
   const runAnalysis = async () => {
     if (images.length === 0) return;
+    const base64List = images.map(img => img.split(',')[1]).filter(Boolean);
+    if (base64List.length === 0) {
+      setError("Bildene kunne ikke klargjøres for analyse. Prøv å laste dem opp på nytt.");
+      return;
+    }
     setIsAnalyzing(true);
     setError(null);
     setAnalysisResult(null);
     setDroneResult(null);
     
     try {
-      const base64List = images.map(img => img.split(',')[1]);
       const result = await geminiService.analyzeComprehensive(base64List, language);
       setAnalysisResult(result);
       setShowCamera(false);
@@ -209,16 +242,20 @@ const FieldConsultantView: React.FC = () => {
 
   const runDroneAnalysis = async () => {
     if (images.length === 0) return;
+    const base64List = images.map(img => img.split(',')[1]).filter(Boolean);
+    if (base64List.length === 0) {
+      setError("Bildene kunne ikke klargjøres for droneanalyse. Prøv å laste dem opp på nytt.");
+      return;
+    }
     setIsDroneAnalyzing(true);
     setError(null);
     
     try {
-      const base64List = images.map(img => img.split(',')[1]);
       const result = await geminiService.analyzeDrone(base64List, language);
       setDroneResult(result);
       setActiveTab('drone');
-    } catch (err) {
-      setError("Drone-analysen feilet.");
+    } catch (err: any) {
+      setError(`Drone-analysen feilet: ${err?.message || String(err)}`);
     } finally {
       setIsDroneAnalyzing(false);
     }
@@ -364,11 +401,11 @@ const FieldConsultantView: React.FC = () => {
               </div>
             ))}
             <button
-              onClick={capturePhoto}
+              onClick={showCamera ? capturePhoto : startCamera}
               className="flex-shrink-0 w-20 h-20 rounded-2xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-white hover:border-white/40 transition-all"
             >
               <Plus size={20} />
-              <span className="text-[9px] font-bold uppercase">Ta bilde</span>
+              <span className="text-[9px] font-bold uppercase">{showCamera ? 'Ta bilde' : 'Kamera'}</span>
             </button>
             <button
               onClick={handleFilePick}

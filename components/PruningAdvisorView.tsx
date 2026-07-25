@@ -33,7 +33,6 @@ const qualityTone = (quality?: string) => {
 };
 
 const PruningAdvisorView: React.FC = () => {
-  const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [plan, setPlan] = useState<PruningPlan | null>(null);
@@ -52,6 +51,7 @@ const PruningAdvisorView: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const loadData = async () => {
     const settings = localStorage.getItem('olivia_settings');
@@ -77,10 +77,15 @@ const PruningAdvisorView: React.FC = () => {
 
   const startCamera = async () => {
     try {
+      stopCamera();
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setError("Kamera er ikke tilgjengelig i denne nettleseren. Last opp et bilde i stedet.");
+        return;
+      }
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
         video: { facingMode: 'environment' }, audio: false 
       });
-      setStream(mediaStream);
+      streamRef.current = mediaStream;
       if (videoRef.current) videoRef.current.srcObject = mediaStream;
       setError(null);
     } catch (err) { 
@@ -90,14 +95,21 @@ const PruningAdvisorView: React.FC = () => {
   };
 
   const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(t => t.stop());
-      setStream(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
   };
 
   const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
+      if (!videoRef.current.videoWidth || !videoRef.current.videoHeight) {
+        setError("Kameraet er ikke klart ennå. Vent et øyeblikk eller last opp et bilde.");
+        return;
+      }
       const context = canvasRef.current.getContext('2d');
       if (context) {
         canvasRef.current.width = videoRef.current.videoWidth;
@@ -406,7 +418,7 @@ const PruningAdvisorView: React.FC = () => {
                      <div className="flex-1">
                        <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Planlegg tidspunkt</p>
                        <input 
-                        type="datetime-local" 
+                        type="date" 
                         className="w-full bg-transparent text-xs text-white focus:outline-none"
                         value={scheduledDate}
                         onChange={(e) => setScheduledDate(e.target.value)}
