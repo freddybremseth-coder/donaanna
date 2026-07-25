@@ -75,6 +75,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
     }
   };
 
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (loading) return;
+    if (mode === 'login') handleLogin();
+    else if (mode === 'register') handleRegister();
+    else handleReset();
+  };
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
       <div className="bg-[#0f0f10] border border-white/10 rounded-[2.5rem] p-10 w-full max-w-md relative shadow-2xl">
@@ -105,12 +113,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
         {mode !== 'reset' && allowRegister && (
           <div className="flex gap-1 bg-white/5 rounded-2xl p-1 mb-8">
             <button
+              type="button"
               onClick={() => { setMode('login'); setError(''); setInfo(''); }}
               className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${mode === 'login' ? 'bg-green-500 text-black' : 'text-slate-400 hover:text-white'}`}
             >
               Logg inn
             </button>
             <button
+              type="button"
               onClick={() => { setMode('register'); setError(''); setInfo(''); }}
               className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${mode === 'register' ? 'bg-green-500 text-black' : 'text-slate-400 hover:text-white'}`}
             >
@@ -129,7 +139,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
           </div>
         )}
 
-        <div className="space-y-4">
+        <form className="space-y-4" onSubmit={handleSubmit}>
           {mode === 'register' && (
             <div className="relative">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
@@ -139,7 +149,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
                 className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-5 py-3.5 text-white focus:outline-none focus:border-green-500/50 placeholder:text-slate-600"
                 value={name}
                 onChange={e => setName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleRegister()}
                 disabled={loading}
               />
             </div>
@@ -153,12 +162,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
               className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-5 py-3.5 text-white focus:outline-none focus:border-green-500/50 placeholder:text-slate-600"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              onKeyDown={e => {
-                if (e.key !== 'Enter') return;
-                if (mode === 'login') handleLogin();
-                else if (mode === 'register') handleRegister();
-                else handleReset();
-              }}
               disabled={loading}
               autoComplete="email"
             />
@@ -173,11 +176,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
                 className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-12 py-3.5 text-white focus:outline-none focus:border-green-500/50 placeholder:text-slate-600"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && (mode === 'login' ? handleLogin() : handleRegister())}
                 disabled={loading}
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               />
-              <button onClick={() => setShowPassword(s => !s)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
+              <button type="button" onClick={() => setShowPassword(s => !s)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
@@ -186,6 +188,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
           {mode === 'login' && (
             <div className="flex justify-end -mt-1">
               <button
+                type="button"
                 onClick={() => { setMode('reset'); setError(''); setInfo(''); }}
                 className="text-xs text-slate-400 hover:text-green-400 font-bold transition-colors"
                 disabled={loading}
@@ -210,7 +213,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
           )}
 
           <button
-            onClick={mode === 'login' ? handleLogin : mode === 'register' ? handleRegister : handleReset}
+            type="submit"
             disabled={loading}
             className="w-full bg-green-500 text-black py-4 rounded-2xl font-bold text-base hover:bg-green-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2 flex items-center justify-center gap-2"
           >
@@ -219,7 +222,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
               ? (mode === 'login' ? 'Logger inn...' : mode === 'register' ? 'Oppretter konto...' : 'Sender e-post...')
               : (mode === 'login' ? 'Logg inn' : mode === 'register' ? 'Opprett konto' : 'Send tilbakestillingslenke')}
           </button>
-        </div>
+        </form>
 
         {mode === 'login' && allowRegister && (
           <p className="text-center text-slate-500 text-sm mt-6">
