@@ -5,7 +5,6 @@ import PublicContentPage, { isPublicContentPath } from './components/PublicConte
 import LoginModal, { StoredUser } from './components/LoginModal';
 import ResetPasswordPage from './components/ResetPasswordPage';
 import { UserProfile, Language, Parcel } from './types';
-import { fetchParcels, upsertParcel, deleteParcel, migrateLocalStorageToSupabase } from './services/db';
 import { getCurrentSession, onAuthChange, signOut as authSignOut } from './services/auth';
 
 const Layout = lazy(() => import('./components/Layout'));
@@ -113,7 +112,6 @@ const App: React.FC = () => {
 
   const [parcels, setParcels] = useState<Parcel[]>(DEFAULT_PARCELS);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(DEFAULT_PARCELS[0]);
-  const [parcelsLoaded, setParcelsLoaded] = useState(false);
 
   const rememberPostLoginTab = (targetTab: string) => {
     postLoginTabRef.current = targetTab;
@@ -124,42 +122,45 @@ const App: React.FC = () => {
     targetTab === 'admin' && !admin ? 'dashboard' : targetTab
   );
 
-  // Load parcels from Supabase on mount + run one-time localStorage migration
+  // Load Olivia farm data only after the user enters the app.
   useEffect(() => {
-    fetchParcels().then(rows => {
-      if (rows.length > 0) {
-        setParcels(rows);
-        setSelectedParcel(rows[0]);
-      }
-      setParcelsLoaded(true);
-    });
-    // One-shot upload of any pre-existing localStorage data (tasks, batches,
-    // recipes, pruning history). Safe to run on every startup; does nothing
-    // after the first successful run thanks to a flag in localStorage.
-    migrateLocalStorageToSupabase()
-      .then(({ migrated, skipped }) => {
+    if (!isAuthReady || !isLoggedIn || showPublicSite) return;
+    let cancelled = false;
+
+    import('./services/db')
+      .then(async ({ fetchParcels, migrateLocalStorageToSupabase }) => {
+        const rows = await fetchParcels();
+        if (!cancelled && rows.length > 0) {
+          setParcels(rows);
+          setSelectedParcel(rows[0]);
+        }
+
+        const { migrated, skipped } = await migrateLocalStorageToSupabase();
         if (!skipped) {
           console.info('[migration] uploaded to Supabase', migrated);
         }
       })
       .catch(err => console.warn('[migration] failed', err));
-  }, []);
+
+    return () => { cancelled = true; };
+  }, [isAuthReady, isLoggedIn, showPublicSite]);
 
   const handleParcelSave = async (parcel: Parcel) => {
+    const { upsertParcel } = await import('./services/db');
     await upsertParcel(parcel);
-    const index = parcels.findIndex(p => p.id === parcel.id);
-    if (index !== -1) {
-      const newParcels = [...parcels];
-      newParcels[index] = parcel;
-      setParcels(newParcels);
-    } else {
-      setParcels([...parcels, parcel]);
-    }
+    setParcels(prev => {
+      const index = prev.findIndex(p => p.id === parcel.id);
+      if (index === -1) return [...prev, parcel];
+      const next = [...prev];
+      next[index] = parcel;
+      return next;
+    });
   };
 
   const handleParcelDelete = async (parcelId: string) => {
+    const { deleteParcel } = await import('./services/db');
     await deleteParcel(parcelId);
-    setParcels(parcels.filter(p => p.id !== parcelId));
+    setParcels(prev => prev.filter(p => p.id !== parcelId));
   };
 
   const fetchWeather = async (lat: number, lon: number) => {
@@ -189,12 +190,12 @@ const App: React.FC = () => {
 
   // Weather refresh whenever the selected parcel changes
   useEffect(() => {
-    if (selectedParcel) {
+    if (!showPublicSite && selectedParcel) {
       const lat = selectedParcel.lat ?? selectedParcel.coordinates?.[0]?.[0];
       const lon = selectedParcel.lon ?? selectedParcel.coordinates?.[0]?.[1];
       if (lat && lon) fetchWeather(lat, lon);
     }
-  }, [selectedParcel]);
+  }, [selectedParcel, showPublicSite]);
 
   // Supabase auth: hydrate from stored session on load + subscribe to changes.
   useEffect(() => {
