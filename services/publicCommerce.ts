@@ -13,12 +13,12 @@ export interface PublicCommerceProduct {
 }
 
 const fallbackPhotos: Record<string, string> = {
-  'verde vivo': '/donaanna/product-design/verde-vivo-estate-arches.jpg',
-  'verde alto': '/donaanna/product-design/verde-alto-rustic-room.jpg',
-  'raiz antigua': '/donaanna/product-design/raiz-antigua-label-hero.jpg',
-  'raíz antigua': '/donaanna/product-design/raiz-antigua-label-hero.jpg',
-  'cocina viva': '/donaanna/product-design/cocina-viva-chef-pour.jpg',
-  mesa: '/donaanna/product-design/portfolio-slate-mesa.jpg',
+  'verde vivo': '/donaanna/uploads/verde-vivo-estate-arches.jpg',
+  'verde alto': '/donaanna/uploads/verde-alto-front-back.jpg',
+  'raiz antigua': '/donaanna/uploads/raiz-antigua-family.jpg',
+  'raíz antigua': '/donaanna/uploads/raiz-antigua-family.jpg',
+  'cocina viva': '/donaanna/uploads/cocina-viva-5l-square.jpg',
+  mesa: '/donaanna/uploads/restaurant-table-pour.jpg',
 };
 
 function text(value: unknown): string {
@@ -26,9 +26,8 @@ function text(value: unknown): string {
 }
 
 function productPhoto(row: any): string {
-  if (row.image_url) return row.image_url;
   const key = text(row.name).toLowerCase();
-  return fallbackPhotos[key] || '/donaanna/product-design/full-product-lineup.jpg';
+  return fallbackPhotos[key] || text(row.image_url) || '/donaanna/uploads/raiz-antigua-clean-family.jpg';
 }
 
 function priceLabel(row: any): string {

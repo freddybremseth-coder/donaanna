@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, Mail, Lock, User, Eye, EyeOff, AlertCircle, Sprout, Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { X, Mail, Lock, User, Eye, EyeOff, AlertCircle, Sprout, Loader2, CheckCircle2, ArrowLeft, Building2 } from 'lucide-react';
 import { signInWithPassword, signUpWithPassword, sendPasswordReset, AuthResult } from '../services/auth';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import type { UserProfile } from '../types';
@@ -14,9 +14,10 @@ interface LoginModalProps {
   onLogin: (user: StoredUser, isAdmin: boolean) => void;
   defaultMode?: 'login' | 'register';
   allowRegister?: boolean;
+  portalContext?: 'b2b' | 'olivia';
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode = 'login', allowRegister = true }) => {
+const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode = 'login', allowRegister = true, portalContext = 'olivia' }) => {
   const [mode, setMode] = useState<'login' | 'register' | 'reset'>(defaultMode === 'register' && !allowRegister ? 'login' : defaultMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,6 +26,26 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
+  const isB2BPortal = portalContext === 'b2b';
+  const portalName = isB2BPortal ? 'Doña Anna B2B' : 'Olivia OS';
+  const portalIntro = isB2BPortal
+    ? 'Portal for restauranter, butikker og distributører.'
+    : 'Styringsverktøy for gården, produksjon og parseller.';
+  const accentButtonClass = isB2BPortal
+    ? 'bg-[#d4af37] text-black hover:bg-white'
+    : 'bg-green-500 text-black hover:bg-green-400';
+  const accentTextClass = isB2BPortal ? 'text-[#d4af37]' : 'text-green-400';
+  const accentFocusClass = isB2BPortal ? 'focus:border-[#d4af37]/70' : 'focus:border-green-500/50';
+  const activeTabClass = isB2BPortal ? 'bg-[#d4af37] text-black' : 'bg-green-500 text-black';
+  const submitText = loading
+    ? (mode === 'login' ? 'Logger inn...' : mode === 'register' ? 'Oppretter konto...' : 'Sender e-post...')
+    : (
+      mode === 'login'
+        ? `Logg inn i ${portalName}`
+        : mode === 'register'
+          ? 'Opprett B2B-konto'
+          : 'Send tilbakestillingslenke'
+    );
 
   const handleLogin = async () => {
     setError(''); setInfo('');
@@ -85,17 +106,22 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="bg-[#0f0f10] border border-white/10 rounded-[2.5rem] p-10 w-full max-w-md relative shadow-2xl">
+      <div data-testid="login-modal" className="bg-[#0f0f10] border border-white/10 rounded-[2.5rem] p-10 w-full max-w-md relative shadow-2xl">
         <button onClick={onClose} className="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors">
           <X size={20} />
         </button>
 
-        {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center">
-            <Sprout size={20} className="text-black" />
+          <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isB2BPortal ? 'bg-[#d4af37]' : 'bg-green-500'}`}>
+            {isB2BPortal ? <Building2 size={20} className="text-black" /> : <Sprout size={20} className="text-black" />}
           </div>
-          <h1 className="text-xl font-bold text-white">Olivia <span className="text-green-400">AI</span></h1>
+          <div>
+            <h1 data-testid="login-portal-heading" className="text-xl font-bold text-white">
+              {isB2BPortal ? 'Doña Anna ' : 'Olivia '}
+              <span className={accentTextClass}>{isB2BPortal ? 'B2B' : 'OS'}</span>
+            </h1>
+            <p className="mt-1 text-xs text-slate-500">{portalIntro}</p>
+          </div>
         </div>
 
         {/* Config missing banner (surfaces the real cause of "spinner hangs forever") */}
@@ -115,14 +141,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
             <button
               type="button"
               onClick={() => { setMode('login'); setError(''); setInfo(''); }}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${mode === 'login' ? 'bg-green-500 text-black' : 'text-slate-400 hover:text-white'}`}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${mode === 'login' ? activeTabClass : 'text-slate-400 hover:text-white'}`}
             >
               Logg inn
             </button>
             <button
               type="button"
               onClick={() => { setMode('register'); setError(''); setInfo(''); }}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${mode === 'register' ? 'bg-green-500 text-black' : 'text-slate-400 hover:text-white'}`}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${mode === 'register' ? activeTabClass : 'text-slate-400 hover:text-white'}`}
             >
               Opprett konto
             </button>
@@ -146,7 +172,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
               <input
                 type="text"
                 placeholder="Ditt navn"
-                className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-5 py-3.5 text-white focus:outline-none focus:border-green-500/50 placeholder:text-slate-600"
+                className={`w-full rounded-2xl border border-white/10 bg-black/40 py-3.5 pl-12 pr-5 text-white placeholder:text-slate-600 focus:outline-none ${accentFocusClass}`}
                 value={name}
                 onChange={e => setName(e.target.value)}
                 disabled={loading}
@@ -159,7 +185,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
             <input
               type="email"
               placeholder="E-post"
-              className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-5 py-3.5 text-white focus:outline-none focus:border-green-500/50 placeholder:text-slate-600"
+              className={`w-full rounded-2xl border border-white/10 bg-black/40 py-3.5 pl-12 pr-5 text-white placeholder:text-slate-600 focus:outline-none ${accentFocusClass}`}
               value={email}
               onChange={e => setEmail(e.target.value)}
               disabled={loading}
@@ -173,7 +199,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
               <input
                 type={showPassword ? 'text' : 'password'}
                 placeholder={mode === 'register' ? 'Passord (min. 6 tegn)' : 'Passord'}
-                className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-12 py-3.5 text-white focus:outline-none focus:border-green-500/50 placeholder:text-slate-600"
+                className={`w-full rounded-2xl border border-white/10 bg-black/40 py-3.5 pl-12 pr-12 text-white placeholder:text-slate-600 focus:outline-none ${accentFocusClass}`}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 disabled={loading}
@@ -190,7 +216,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
               <button
                 type="button"
                 onClick={() => { setMode('reset'); setError(''); setInfo(''); }}
-                className="text-xs text-slate-400 hover:text-green-400 font-bold transition-colors"
+                className={`text-xs font-bold text-slate-400 transition-colors ${isB2BPortal ? 'hover:text-[#d4af37]' : 'hover:text-green-400'}`}
                 disabled={loading}
               >
                 Glemt passord?
@@ -215,19 +241,17 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-green-500 text-black py-4 rounded-2xl font-bold text-base hover:bg-green-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2 flex items-center justify-center gap-2"
+            className={`mt-2 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${accentButtonClass}`}
           >
             {loading && <Loader2 size={16} className="animate-spin" />}
-            {loading
-              ? (mode === 'login' ? 'Logger inn...' : mode === 'register' ? 'Oppretter konto...' : 'Sender e-post...')
-              : (mode === 'login' ? 'Logg inn' : mode === 'register' ? 'Opprett konto' : 'Send tilbakestillingslenke')}
+            {submitText}
           </button>
         </form>
 
         {mode === 'login' && allowRegister && (
           <p className="text-center text-slate-500 text-sm mt-6">
             Har du ikke konto?{' '}
-            <button onClick={() => { setMode('register'); setError(''); setInfo(''); }} className="text-green-400 hover:text-green-300 font-bold">
+            <button onClick={() => { setMode('register'); setError(''); setInfo(''); }} className={`font-bold ${isB2BPortal ? 'text-[#d4af37] hover:text-white' : 'text-green-400 hover:text-green-300'}`}>
               Registrer deg
             </button>
           </p>

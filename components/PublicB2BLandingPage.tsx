@@ -63,13 +63,29 @@ const copy = {
   },
 };
 
+const imagePaths = {
+  heroChefWide: '/donaanna/uploads/hero-cocina-chef-wide.jpg',
+  b2bTraceabilityKitchen: '/donaanna/uploads/b2b-traceability-kitchen.jpg',
+  verdeVivoHero: '/donaanna/uploads/verde-vivo-estate-arches.jpg',
+  daBlackBottle: '/donaanna/uploads/dona-anna-black-bottle.jpg',
+  verdeAltoFrontBack: '/donaanna/uploads/verde-alto-front-back.jpg',
+  donaAnnaPouringBread: '/donaanna/uploads/dona-anna-pouring-bread.jpg',
+  restaurantTablePour: '/donaanna/uploads/restaurant-table-pour.jpg',
+  raizAntiguaFamily: '/donaanna/uploads/raiz-antigua-family.jpg',
+  raizAntiguaCleanFamily: '/donaanna/uploads/raiz-antigua-clean-family.jpg',
+  cocinaViva5l: '/donaanna/uploads/cocina-viva-5l-square.jpg',
+  cocinaVivaChef: '/donaanna/uploads/cocina-viva-chef-square.jpg',
+  raizAntiguaCandle: '/donaanna/uploads/raiz-antigua-candle-square.jpg',
+  brandWordmarkBlack: '/donaanna/uploads/brand-wordmark-black.jpg',
+};
+
 const portfolio = [
   {
     name: 'Verde Vivo',
     labelName: 'DOÑA ANNA · VERDE VIVO',
     format: '500 ml · Cosecha Temprana I',
     role: 'Intens finishing oil',
-    photo: '/donaanna/product-design/verde-vivo-estate-arches.jpg',
+    photo: imagePaths.verdeVivoHero,
     text: 'Vår mest intense tidlig-høstede olje. Grønn fruktighet, tydelig bitterhet og lang pepperfinish gjør den sterk på grillet fisk, tomat, brød, salater og retter som trenger en frisk avslutning.',
   },
   {
@@ -77,7 +93,7 @@ const portfolio = [
     labelName: 'DOÑA ANNA · VERDE ALTO',
     format: '500 ml · Cosecha Temprana II',
     role: 'Balanced finishing oil',
-    photo: '/donaanna/product-design/verde-alto-rustic-room.jpg',
+    photo: imagePaths.verdeAltoFrontBack,
     text: 'Tidlig høstet, men rundere i uttrykket enn Verde Vivo. En premium bord- og kjøkkenolje for restauranter som ønsker grønn karakter uten at oljen dominerer retten.',
   },
   {
@@ -85,7 +101,7 @@ const portfolio = [
     labelName: 'DOÑA ANNA · RAÍZ ANTIGUA',
     format: '500 ml · old-tree estate selection',
     role: 'Old-tree selection',
-    photo: '/donaanna/product-design/raiz-antigua-label-hero.jpg',
+    photo: imagePaths.raizAntiguaFamily,
     text: 'En begrenset seleksjon fra eldre trær på gården. Dypere, mer moden fruktighet og en roligere eleganse gjør den egnet for menyer, gavepakker og restauranter som vil fortelle historien om lunden.',
   },
   {
@@ -93,7 +109,7 @@ const portfolio = [
     labelName: 'DOÑA ANNA · MONOVARIETAL COLLECTION',
     format: 'Genovesa · Gordal · Changlot Real · Picual',
     role: 'Variety tasting',
-    photo: '/donaanna/product-design/portfolio-slate-mesa.jpg',
+    photo: imagePaths.daBlackBottle,
     text: 'Små batcher som viser hvordan sort, jord og høstetidspunkt påvirker aroma og struktur. En naturlig smaksreise for sommelierer, kokker og spesialbutikker.',
   },
   {
@@ -101,7 +117,7 @@ const portfolio = [
     labelName: 'DOÑA ANNA · COCINA VIVA',
     format: '2 L / 5 L · chef format',
     role: 'Chef format',
-    photo: '/donaanna/product-design/cocina-viva-chef-pour.jpg',
+    photo: imagePaths.cocinaViva5l,
     text: 'Større format for profesjonelle kjøkken som bruker olivenolje hver dag, men fortsatt vil ha kontroll på kvalitet, opprinnelse og batch. Utviklet for service, mise en place og varme retter.',
   },
   {
@@ -109,7 +125,7 @@ const portfolio = [
     labelName: 'DOÑA ANNA · MESA',
     format: 'Aceitunas de mesa',
     role: 'Table olives',
-    photo: '/donaanna/product-design/portfolio-slate-mesa.jpg',
+    photo: imagePaths.restaurantTablePour,
     text: 'Bordoliven for aperitivo, markeder, barer og restauranter. En mer uformell inngang til Doña Anna, med samme fokus på råvare, tekstur og opprinnelse.',
   },
 ];
@@ -127,19 +143,19 @@ const b2bPackages = [
   {
     title: 'Chef tasting kit',
     audience: 'Restaurant / hotell',
-    image: '/donaanna/product-design/cocina-viva-chef-pour.jpg',
+    image: imagePaths.b2bTraceabilityKitchen,
     text: 'Verde Vivo, Verde Alto og Mesa med produktark, batchhistorie og forslag til bruk på brød, tomat, fisk, grønnsaker og service.',
   },
   {
     title: 'Restaurant startpakke',
     audience: 'Kjøkken og bordservering',
-    image: '/donaanna/product-design/verde-vivo-terrace-close.jpg',
+    image: imagePaths.cocinaVivaChef,
     text: '500 ml finishing oils til bordet og Cocina Viva i større format for mise en place, varme retter og daglig bruk.',
   },
   {
     title: 'Retail launch',
     audience: 'Gourmetbutikk / import',
-    image: '/donaanna/product-design/full-product-lineup.jpg',
+    image: imagePaths.raizAntiguaCleanFamily,
     text: 'Hylleklar portefølje med produktbilder, norsk/spansk/engelsk tekst, QR-sporbarhet og tydelig premiumfortelling.',
   },
 ];
@@ -186,7 +202,7 @@ const knowledgeCards = [
   {
     title: 'Polyfenolens kraft',
     kicker: 'Naturlige antioksidanter',
-    image: '/donaanna/polyphenols.jpg',
+    image: imagePaths.donaAnnaPouringBread,
     text: 'Ekstra virgin olivenolje fra tidlig høsting kan inneholde et høyt nivå av polyfenoler. De gir bitterhet, pepperfølelse og er en viktig del av oljens ernæringsmessige profil.',
   },
   {
@@ -198,7 +214,7 @@ const knowledgeCards = [
   {
     title: 'Tidlig høsting',
     kicker: 'Cosecha temprana',
-    image: '/donaanna/early-harvest.jpg',
+    image: imagePaths.verdeVivoHero,
     text: 'Tidlig høsting gir lavere oljeutbytte, men mer intens aroma, friskere grønn fruktighet og høyere bitterhet og skarphet. Det er kjernen i Verde Vivo og Verde Alto.',
   },
 ];
@@ -213,22 +229,22 @@ const qualitySteps = [
 const visualDirections = [
   {
     title: 'Finishing ved bordet',
-    image: '/donaanna/product-design/verde-vivo-terrace-close.jpg',
+    image: imagePaths.restaurantTablePour,
     text: 'Verde Vivo og Verde Alto møter gjesten på bordet: brød, tomat, fisk, grønnsaker og en tydelig grønn finish rett før servering.',
   },
   {
     title: 'Restaurantkjøkken',
-    image: '/donaanna/product-design/cocina-viva-chef-pour.jpg',
+    image: imagePaths.heroChefWide,
     text: 'Cocina Viva er utviklet for arbeidstempoet i et profesjonelt kjøkken, med større format og samme sporbare kvalitet som flaskene ved bordet.',
   },
   {
     title: 'Gammel rot og ild',
-    image: '/donaanna/product-design/raiz-antigua-paella.jpg',
+    image: imagePaths.raizAntiguaCandle,
     text: 'Raíz Antigua bærer gårdens mest emosjonelle uttrykk: gamle trær, varme rom, røyk, treverk og en olje som fortjener langsom servering.',
   },
   {
     title: 'Hele kolleksjonen',
-    image: '/donaanna/product-design/full-product-lineup.jpg',
+    image: imagePaths.raizAntiguaCleanFamily,
     text: 'Kolleksjonen samler olje og bordoliven i et visuelt språk av mørkt glass, kremfarget etikett, DA-monogram og Doña Annas rolige signatur.',
   },
 ];
@@ -238,14 +254,14 @@ const videoStories = [
     title: 'Michelin-kjøkkenet',
     eyebrow: 'I bruk',
     src: '/donaanna/video/michelin-chef-uses-dona-anna.mp4',
-    poster: '/donaanna/product-design/cocina-viva-chef-pour.jpg',
+    poster: imagePaths.b2bTraceabilityKitchen,
     text: 'Doña Anna er laget for kjøkken som arbeider presist. Filmen viser oljen i bruk, der aroma, varme og timing avgjør hvordan retten avsluttes.',
   },
   {
     title: 'Flasken klar',
     eyebrow: 'Produktfilm',
     src: '/donaanna/video/video-av-flasken-klar.mp4',
-    poster: '/donaanna/product-design/verde-vivo-estate-arches.jpg',
+    poster: imagePaths.daBlackBottle,
     text: 'En rolig produktfilm som viser flaske, materiale og uttrykk. Den bygger forventning før første dråpe treffer tallerkenen.',
   },
 ];
@@ -287,7 +303,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   ];
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] text-[#f7f1df] selection:bg-[#d4af37]/30">
+    <div className="min-h-screen bg-[#0d0d0d] pb-24 text-[#f7f1df] selection:bg-[#d4af37]/30 lg:pb-0">
       <nav className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#0d0d0d]/82 px-4 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between">
           <a href="#top" className="flex items-center gap-3">
@@ -311,10 +327,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             >
               <Languages size={15} /> {locale.toUpperCase()}
             </button>
-            <button onClick={onAdminLogin} className="inline-flex h-10 items-center gap-2 border border-white/12 px-3 text-xs uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/8">
+            <button data-testid="olivia-os-nav" onClick={onAdminLogin} className="inline-flex h-10 items-center gap-2 border border-white/12 px-3 text-xs uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/8">
               <LockKeyhole size={15} /> Olivia OS
             </button>
-            <button onClick={onLogin} className="inline-flex h-10 items-center gap-2 bg-white px-4 text-xs font-bold uppercase tracking-[0.18em] text-black transition hover:bg-[#d4af37]">
+            <button data-testid="b2b-portal-nav" onClick={onLogin} className="inline-flex h-10 items-center gap-2 bg-white px-4 text-xs font-bold uppercase tracking-[0.18em] text-black transition hover:bg-[#d4af37]">
               {t.portal}
             </button>
           </div>
@@ -329,16 +345,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 {label}
               </a>
             ))}
-            <button onClick={onLogin} className="mt-3 w-full bg-white px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-black">
-              {t.portal}
-            </button>
+            <div className="mt-3 grid gap-2">
+              <button data-testid="b2b-portal-mobile-menu" onClick={() => { setMenuOpen(false); onLogin(); }} className="w-full bg-white px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-black">
+                {t.portal}
+              </button>
+              <button data-testid="olivia-os-mobile-menu" onClick={() => { setMenuOpen(false); onAdminLogin(); }} className="w-full border border-white/12 px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-white/72">
+                Olivia OS
+              </button>
+            </div>
           </div>
         )}
       </nav>
 
       <header id="top" className="relative min-h-screen overflow-hidden">
-        <img src="/donaanna/product-design/verde-vivo-estate-arches.jpg" alt="Doña Anna Verde Vivo i Biar" className="absolute inset-0 h-full w-full object-cover opacity-36" />
-        <video className="absolute inset-0 h-full w-full object-cover opacity-48" autoPlay muted loop playsInline poster="/donaanna/product-design/verde-vivo-estate-arches.jpg">
+        <img src={imagePaths.heroChefWide} alt="Doña Anna i bruk på restaurantkjøkken" className="absolute inset-0 h-full w-full object-cover opacity-42" />
+        <video className="absolute inset-0 h-full w-full object-cover opacity-42" autoPlay muted loop playsInline poster={imagePaths.heroChefWide}>
           <source src="/donaanna/video/video-av-flasken-klar.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_42%,rgba(212,175,55,.16),transparent_34%),linear-gradient(90deg,rgba(13,13,13,.98),rgba(13,13,13,.78),rgba(13,13,13,.42))]" />
@@ -354,6 +375,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <a href="#portfolio" className="inline-flex h-12 items-center justify-center gap-2 border border-white/18 px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-white/8">
                 Se kolleksjonen
               </a>
+              <button data-testid="b2b-portal-hero" onClick={onLogin} className="inline-flex h-12 items-center justify-center gap-2 border border-[#d4af37]/60 px-6 text-xs font-bold uppercase tracking-[0.2em] text-[#f7f1df] transition hover:bg-[#d4af37] hover:text-black">
+                Åpne B2B portal <LockKeyhole size={16} />
+              </button>
             </div>
           </div>
           <div className="mt-12 grid max-w-5xl grid-cols-2 border border-white/12 bg-black/22 backdrop-blur md:grid-cols-4">
@@ -411,7 +435,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
         <section id="design" className="border-y border-white/10 bg-[#080808] px-5 py-20 md:px-8">
           <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.12fr_0.88fr] lg:items-center">
             <div className="overflow-hidden border border-[#d4af37]/24 bg-black">
-              <img src="/donaanna/product-design/full-product-lineup.jpg" alt="Doña Anna produktlinje med Cocina Viva, Mesa, Verde Alto, Raíz Antigua og Verde Vivo" className="aspect-[16/9] w-full object-cover" />
+              <img src={imagePaths.brandWordmarkBlack} alt="Doña Anna merkevare med Biar og Alicante" className="aspect-[16/9] w-full object-cover" />
             </div>
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Merkevaren</p>
@@ -450,7 +474,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             ))}
           </div>
           <div className="mx-auto mt-10 grid max-w-7xl gap-6 border border-white/10 bg-black/34 p-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-            <img src="/donaanna/social/dona-anna-youtube-channel-2560x1440.jpg" alt="Doña Anna YouTube kanalbanner" className="aspect-video w-full object-cover" />
+            <img src={imagePaths.raizAntiguaCleanFamily} alt="Doña Anna produktfamilie" className="aspect-video w-full object-cover" />
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Doña Anna</p>
               <h3 className="mt-3 font-serif text-3xl md:text-4xl">En samlet visuell identitet.</h3>
@@ -558,7 +582,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             </div>
             <div className="mt-10 grid gap-5 border border-black/10 bg-[#111111] p-5 text-white lg:grid-cols-[0.82fr_1.18fr]">
               <div className="relative min-h-[360px] overflow-hidden">
-                <img src="/donaanna/testing.jpg" alt="Kvalitetstesting av olivenolje" className="absolute inset-0 h-full w-full object-cover opacity-72" />
+                <img src={imagePaths.donaAnnaPouringBread} alt="Doña Anna olivenolje helles over brød" className="absolute inset-0 h-full w-full object-cover opacity-72" />
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.78))]" />
                 <div className="absolute bottom-0 p-6">
                   <Sparkles className="text-[#d4af37]" size={26} />
@@ -584,7 +608,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
         <section className="relative overflow-hidden bg-[#0d0d0d] py-24">
           <div className="absolute inset-0 opacity-24">
-            <img src="/donaanna/farming-3.jpg" alt="Vann og presisjonsdrift i olivenlunden" className="h-full w-full object-cover" />
+            <img src={imagePaths.verdeVivoHero} alt="Doña Anna Verde Vivo i Biar" className="h-full w-full object-cover" />
           </div>
           <div className="absolute inset-0 bg-[linear-gradient(180deg,#0d0d0d,rgba(13,13,13,.78),#0d0d0d)]" />
           <div className="relative mx-auto grid max-w-7xl gap-10 px-5 md:grid-cols-[0.8fr_1.2fr] md:px-8">
@@ -687,7 +711,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-black px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-[#8a6a19]">
                     Start med tasting kit <ArrowRight size={17} />
                   </a>
-                  <button onClick={onLogin} className="inline-flex h-12 items-center justify-center gap-2 border border-black/15 px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
+                  <button data-testid="b2b-portal-section" onClick={onLogin} className="inline-flex h-12 items-center justify-center gap-2 border border-black/15 px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
                     B2B portal <LockKeyhole size={16} />
                   </button>
                 </div>
@@ -753,7 +777,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <a href="mailto:info@donaanna.com?subject=Produktark%20Do%C3%B1a%20Anna" className="inline-flex items-center gap-2 border border-black/15 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em]">
                   <FileText size={16} /> Be om produktark
                 </a>
-                <button onClick={onLogin} className="inline-flex items-center gap-2 border border-black/15 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em]">
+                <button data-testid="b2b-portal-tasting" onClick={onLogin} className="inline-flex items-center gap-2 border border-black/15 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em]">
                   <Package size={16} /> B2B-login
                 </button>
               </div>
@@ -779,12 +803,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
         <div className="mx-auto flex max-w-7xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <p className="font-serif text-lg tracking-[0.18em]">DOÑA ANNA</p>
           <div className="flex flex-wrap gap-4 text-xs uppercase tracking-[0.18em] text-white/54">
-            <button onClick={onLogin}>B2B Portal</button>
-            <button onClick={onAdminLogin}>Olivia OS</button>
+            <button data-testid="b2b-portal-footer" onClick={onLogin}>B2B Portal</button>
+            <button data-testid="olivia-os-footer" onClick={onAdminLogin}>Olivia OS</button>
             <a href="mailto:info@donaanna.com">info@donaanna.com</a>
           </div>
         </div>
       </footer>
+
+      <div className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-2 gap-2 border-t border-white/10 bg-[#0d0d0d]/94 p-3 backdrop-blur-xl lg:hidden">
+        <button data-testid="b2b-portal-mobile-dock" onClick={onLogin} className="inline-flex h-12 items-center justify-center gap-2 bg-white text-xs font-bold uppercase tracking-[0.16em] text-black">
+          <Building2 size={16} /> B2B portal
+        </button>
+        <button data-testid="olivia-os-mobile-dock" onClick={onAdminLogin} className="inline-flex h-12 items-center justify-center gap-2 border border-white/14 text-xs font-bold uppercase tracking-[0.16em] text-white/78">
+          <LockKeyhole size={16} /> Olivia OS
+        </button>
+      </div>
     </div>
   );
 };

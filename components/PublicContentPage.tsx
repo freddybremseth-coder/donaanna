@@ -3,6 +3,8 @@ import { ArrowLeft, ArrowRight, Calendar, Languages, LockKeyhole, Menu, X } from
 import MarkdownArticle from './MarkdownArticle';
 import { fetchPublishedPost, fetchPublishedPosts, PublicWebsitePost } from '../services/publicContent';
 
+const DEFAULT_CONTENT_IMAGE = '/donaanna/uploads/verde-vivo-estate-arches.jpg';
+
 interface PublicContentPageProps {
   onLogin: () => void;
   onAdminLogin: () => void;
@@ -108,7 +110,7 @@ const PublicContentPage: React.FC<PublicContentPageProps> = ({ onLogin, onAdminL
   }, [route.destination.id, route.slug]);
 
   const latestImage = useMemo(() => (
-    post?.image_url || posts.find(item => item.image_url)?.image_url || '/donaanna/product-design/verde-vivo-estate-arches.jpg'
+    post?.image_url || posts.find(item => item.image_url)?.image_url || DEFAULT_CONTENT_IMAGE
   ), [post, posts]);
 
   const navLinks = Object.values(destinations);
@@ -135,10 +137,10 @@ const PublicContentPage: React.FC<PublicContentPageProps> = ({ onLogin, onAdminL
             <button className="inline-flex h-10 items-center gap-2 border border-white/12 px-3 text-xs uppercase tracking-[0.18em] text-white/70">
               <Languages size={15} /> NO
             </button>
-            <button onClick={onAdminLogin} className="inline-flex h-10 items-center gap-2 border border-white/12 px-3 text-xs uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/8">
+            <button data-testid="olivia-os-content-nav" onClick={onAdminLogin} className="inline-flex h-10 items-center gap-2 border border-white/12 px-3 text-xs uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/8">
               <LockKeyhole size={15} /> Olivia OS
             </button>
-            <button onClick={onLogin} className="inline-flex h-10 items-center gap-2 bg-white px-4 text-xs font-bold uppercase tracking-[0.18em] text-black transition hover:bg-[#d4af37]">
+            <button data-testid="b2b-portal-content-nav" onClick={onLogin} className="inline-flex h-10 items-center gap-2 bg-white px-4 text-xs font-bold uppercase tracking-[0.18em] text-black transition hover:bg-[#d4af37]">
               B2B portal
             </button>
           </div>
@@ -153,6 +155,14 @@ const PublicContentPage: React.FC<PublicContentPageProps> = ({ onLogin, onAdminL
                 {item.label}
               </a>
             ))}
+            <div className="mt-3 grid gap-2">
+              <button data-testid="b2b-portal-content-mobile-menu" onClick={() => { setMenuOpen(false); onLogin(); }} className="w-full bg-white px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-black">
+                B2B portal
+              </button>
+              <button data-testid="olivia-os-content-mobile-menu" onClick={() => { setMenuOpen(false); onAdminLogin(); }} className="w-full border border-white/12 px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-white/72">
+                Olivia OS
+              </button>
+            </div>
           </div>
         )}
       </nav>
@@ -237,7 +247,7 @@ const PublicContentPage: React.FC<PublicContentPageProps> = ({ onLogin, onAdminL
                   <a key={item.id} href={`${route.destination.path}/${item.slug}`} className="group overflow-hidden border border-white/10 bg-white/[0.035] transition hover:border-[#d4af37]/50">
                     <div className="h-56 overflow-hidden bg-black">
                       <img
-                        src={item.image_url || '/donaanna/product-design/verde-vivo-estate-arches.jpg'}
+                        src={item.image_url || DEFAULT_CONTENT_IMAGE}
                         alt={item.title}
                         className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
                       />

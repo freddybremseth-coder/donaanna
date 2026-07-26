@@ -306,6 +306,8 @@ const App: React.FC = () => {
     openLogin(mode, targetTab);
   };
 
+  const loginPortalContext = postLoginTabRef.current === 'commerce' ? 'b2b' : 'olivia';
+
   // Password-recovery takes priority over everything else: the user arrived
   // via the email link and needs to set a new password before anything else
   // matters (dashboard, login modal, etc).
@@ -319,7 +321,7 @@ const App: React.FC = () => {
         <>
           <PublicContentPage onLogin={() => openApp('login', 'commerce')} onAdminLogin={() => openApp('login', 'dashboard')} />
           {showLogin && (
-            <LoginModal defaultMode={loginDefaultMode} allowRegister={postLoginTabRef.current === 'commerce'} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
+            <LoginModal portalContext={loginPortalContext} defaultMode={loginDefaultMode} allowRegister={postLoginTabRef.current === 'commerce'} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
           )}
         </>
       );
@@ -329,7 +331,7 @@ const App: React.FC = () => {
       <>
         <LandingPage onLogin={() => openApp('login', 'commerce')} onAdminLogin={() => openApp('login', 'dashboard')} onRegister={() => openApp('register', 'commerce')} />
         {showLogin && (
-          <LoginModal defaultMode={loginDefaultMode} allowRegister={postLoginTabRef.current === 'commerce'} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
+          <LoginModal portalContext={loginPortalContext} defaultMode={loginDefaultMode} allowRegister={postLoginTabRef.current === 'commerce'} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
         )}
       </>
     );
@@ -344,7 +346,7 @@ const App: React.FC = () => {
       <>
         <LandingPage onLogin={() => openLogin('login', 'commerce')} onAdminLogin={() => openLogin('login', 'dashboard')} onRegister={() => openLogin('register', 'commerce')} />
         {showLogin && (
-            <LoginModal defaultMode={loginDefaultMode} allowRegister={postLoginTabRef.current === 'commerce'} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
+            <LoginModal portalContext={loginPortalContext} defaultMode={loginDefaultMode} allowRegister={postLoginTabRef.current === 'commerce'} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
         )}
       </>
     );
