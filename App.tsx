@@ -72,6 +72,19 @@ const AuthLoadingScreen: React.FC = () => (
   </div>
 );
 
+const BIAR_DEFAULT_COORDS = { lat: 38.6294, lon: -0.7667 };
+const BIAR_DEFAULT_LOCATION_NAME = 'Biar, Alicante';
+const EMPTY_OLIVIA_PARCELS: Parcel[] = [];
+const OLIVIA_FALLBACK_USER: UserProfile = {
+  id: 'pending-profile',
+  name: 'Doña Anna bruker',
+  email: '',
+  role: 'farmer',
+  subscription: 'trial',
+  subscriptionStart: '',
+  avatar: '',
+};
+
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -92,26 +105,12 @@ const App: React.FC = () => {
   const [isPasswordRecovery, setIsPasswordRecovery] = useState<boolean>(isRecoveryUrl);
 
   const [weatherData, setWeatherData] = useState<any>(null);
-  const [locationName, setLocationName] = useState('Biar, Spain');
-  const [coords, setCoords] = useState<{lat: number, lon: number}>({ lat: 38.6294, lon: -0.7667 });
+  const [locationName] = useState(BIAR_DEFAULT_LOCATION_NAME);
+  const [coords] = useState<{lat: number, lon: number}>(BIAR_DEFAULT_COORDS);
 
-  const [user, setUser] = useState<UserProfile>({
-    id: 'u1',
-    name: 'Henrik Olivenlund',
-    email: 'henrik@olivia.ai',
-    role: 'farmer',
-    subscription: 'annual',
-    subscriptionStart: '2024-01-15',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
-  });
-
-  const DEFAULT_PARCELS: Parcel[] = [
-    { id: 'p1', name: 'Hovedlunden', area: 125000, cropType: 'Arbequina', soilType: 'Leire', treeCount: 350, irrigationStatus: 'Optimal', coordinates: [[38.6300, -0.7650]], lat: 38.6300, lon: -0.7650 },
-    { id: 'p2', name: 'Nordhellinga', area: 82000, cropType: 'Picual', soilType: 'Sandholdig leire', treeCount: 220, irrigationStatus: 'Optimal', coordinates: [[38.6325, -0.7680]], lat: 38.6325, lon: -0.7680 },
-  ];
-
-  const [parcels, setParcels] = useState<Parcel[]>(DEFAULT_PARCELS);
-  const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(DEFAULT_PARCELS[0]);
+  const [user, setUser] = useState<UserProfile>(OLIVIA_FALLBACK_USER);
+  const [parcels, setParcels] = useState<Parcel[]>(EMPTY_OLIVIA_PARCELS);
+  const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
 
   const rememberPostLoginTab = (targetTab: string) => {
     postLoginTabRef.current = targetTab;
@@ -130,9 +129,9 @@ const App: React.FC = () => {
     import('./services/db')
       .then(async ({ fetchParcels, migrateLocalStorageToSupabase }) => {
         const rows = await fetchParcels();
-        if (!cancelled && rows.length > 0) {
+        if (!cancelled) {
           setParcels(rows);
-          setSelectedParcel(rows[0]);
+          setSelectedParcel(rows[0] ?? null);
         }
 
         const { migrated, skipped } = await migrateLocalStorageToSupabase();
@@ -233,6 +232,9 @@ const App: React.FC = () => {
         } else {
           setIsLoggedIn(false);
           setIsAdmin(false);
+          setUser(OLIVIA_FALLBACK_USER);
+          setParcels(EMPTY_OLIVIA_PARCELS);
+          setSelectedParcel(null);
         }
       },
       () => {
@@ -260,6 +262,9 @@ const App: React.FC = () => {
     setIsLoggedIn(false);
     setIsAdmin(false);
     setIsAuthReady(true);
+    setUser(OLIVIA_FALLBACK_USER);
+    setParcels(EMPTY_OLIVIA_PARCELS);
+    setSelectedParcel(null);
     setActiveTab('dashboard');
     // Wipe any legacy localStorage session left over from the old flow
     localStorage.removeItem('olivia_session');
@@ -346,7 +351,7 @@ const App: React.FC = () => {
   }
 
   const parcelCoords = selectedParcel
-    ? { lat: selectedParcel.lat ?? selectedParcel.coordinates?.[0]?.[0] ?? 38.6294, lon: selectedParcel.lon ?? selectedParcel.coordinates?.[0]?.[1] ?? -0.7667 }
+    ? { lat: selectedParcel.lat ?? selectedParcel.coordinates?.[0]?.[0] ?? BIAR_DEFAULT_COORDS.lat, lon: selectedParcel.lon ?? selectedParcel.coordinates?.[0]?.[1] ?? BIAR_DEFAULT_COORDS.lon }
     : coords;
 
   const renderContent = () => {
