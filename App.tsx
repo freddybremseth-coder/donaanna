@@ -39,6 +39,7 @@ const LEGACY_APP_PATH = '/app';
 const B2B_PORTAL_PATH = '/b2b';
 const OLIVIA_OS_PATH = '/olivia';
 type PortalMode = 'olivia' | 'b2b';
+const B2B_ALLOWED_TABS = new Set(['commerce', 'settings']);
 
 function currentPath(): string {
   if (typeof window === 'undefined') return '/';
@@ -120,16 +121,20 @@ const App: React.FC = () => {
     setPortalMode(targetTab === 'commerce' ? 'b2b' : 'olivia');
   };
 
-  const resolveTargetTab = (targetTab: string, admin: boolean) => (
-    targetTab === 'admin' && !admin ? 'dashboard' : targetTab
-  );
+  const resolveTargetTab = (targetTab: string, admin: boolean, lockToB2B: boolean) => {
+    if (lockToB2B && !B2B_ALLOWED_TABS.has(targetTab)) return 'commerce';
+    if (targetTab === 'admin' && !admin) return 'dashboard';
+    return targetTab;
+  };
 
-  const activateTab = (targetTab: string, admin = isAdmin) => {
-    const nextTab = resolveTargetTab(targetTab, admin);
+  const activateTab = (targetTab: string, admin = isAdmin, role: UserProfile['role'] = user.role) => {
+    const lockToB2B = portalMode === 'b2b' || role === 'b2b_customer';
+    const nextTab = resolveTargetTab(targetTab, admin, lockToB2B);
+    const nextPortalMode = lockToB2B || nextTab === 'commerce' ? 'b2b' : 'olivia';
     setActiveTab(nextTab);
-    setPortalMode(nextTab === 'commerce' ? 'b2b' : 'olivia');
+    setPortalMode(nextPortalMode);
     if (typeof window !== 'undefined') {
-      const nextPath = nextTab === 'commerce' ? B2B_PORTAL_PATH : OLIVIA_OS_PATH;
+      const nextPath = nextPortalMode === 'b2b' ? B2B_PORTAL_PATH : OLIVIA_OS_PATH;
       if (window.location.pathname !== nextPath) {
         window.history.replaceState({}, '', nextPath);
       }
@@ -138,7 +143,7 @@ const App: React.FC = () => {
 
   // Load Olivia farm data only after the user enters the app.
   useEffect(() => {
-    if (!isAuthReady || !isLoggedIn || showPublicSite) return;
+    if (!isAuthReady || !isLoggedIn || showPublicSite || portalMode === 'b2b' || user.role === 'b2b_customer') return;
     let cancelled = false;
 
     import('./services/db')
@@ -157,7 +162,25 @@ const App: React.FC = () => {
       .catch(err => console.warn('[migration] failed', err));
 
     return () => { cancelled = true; };
-  }, [isAuthReady, isLoggedIn, showPublicSite]);
+  }, [isAuthReady, isLoggedIn, showPublicSite, portalMode, user.role]);
+
+  useEffect(() => {
+    const lockToB2B = portalMode === 'b2b' || user.role === 'b2b_customer';
+    if (!isLoggedIn || showPublicSite || !lockToB2B) return;
+
+    if (portalMode !== 'b2b') {
+      setPortalMode('b2b');
+    }
+    if (!B2B_ALLOWED_TABS.has(activeTab)) {
+      setActiveTab('commerce');
+    }
+    setParcels(EMPTY_OLIVIA_PARCELS);
+    setSelectedParcel(null);
+
+    if (typeof window !== 'undefined' && window.location.pathname !== B2B_PORTAL_PATH) {
+      window.history.replaceState({}, '', B2B_PORTAL_PATH);
+    }
+  }, [activeTab, isLoggedIn, portalMode, showPublicSite, user.role]);
 
   const handleParcelSave = async (parcel: Parcel) => {
     const { upsertParcel } = await import('./services/db');
@@ -226,7 +249,7 @@ const App: React.FC = () => {
         setIsAdmin(result.isAdmin);
         setIsLoggedIn(true);
         setShowLogin(false);
-        activateTab(postLoginTabRef.current, result.isAdmin);
+        activateTab(postLoginTabRef.current, result.isAdmin, result.user.role);
       }).catch(err => {
         console.warn('[auth] session hydration failed:', err);
       }).finally(markAuthReady);
@@ -268,7 +291,7 @@ const App: React.FC = () => {
     setIsAdmin(admin);
     setIsLoggedIn(true);
     setIsAuthReady(true);
-    activateTab(postLoginTabRef.current, admin);
+    activateTab(postLoginTabRef.current, admin, storedUser.role);
     setShowLogin(false);
   };
 
@@ -280,7 +303,8 @@ const App: React.FC = () => {
     setUser(OLIVIA_FALLBACK_USER);
     setParcels(EMPTY_OLIVIA_PARCELS);
     setSelectedParcel(null);
-    activateTab('dashboard', false);
+    setActiveTab(portalMode === 'b2b' ? 'commerce' : 'dashboard');
+    setPortalMode(portalMode === 'b2b' ? 'b2b' : 'olivia');
     // Wipe any legacy localStorage session left over from the old flow
     localStorage.removeItem('olivia_session');
   };
@@ -322,6 +346,7 @@ const App: React.FC = () => {
   };
 
   const loginPortalContext = postLoginTabRef.current === 'commerce' ? 'b2b' : 'olivia';
+  const b2bPortalIsActive = portalMode === 'b2b' || user.role === 'b2b_customer';
 
   // Password-recovery takes priority over everything else: the user arrived
   // via the email link and needs to set a new password before anything else
@@ -372,6 +397,11 @@ const App: React.FC = () => {
     : coords;
 
   const renderContent = () => {
+    if (b2bPortalIsActive) {
+      if (activeTab === 'settings') return <SettingsView language={language} onLanguageChange={updateLanguage} />;
+      return <CommerceHub />;
+    }
+
     if (isAdmin && activeTab === 'admin') return <AdminDashboard />;
 
     switch (activeTab) {
@@ -417,11 +447,11 @@ const App: React.FC = () => {
     <Suspense fallback={<div className="min-h-screen bg-[#0a0a0b] p-8 text-slate-300">Laster Olivia OS...</div>}>
       <Layout
         user={user}
-        activeTab={activeTab}
+        activeTab={b2bPortalIsActive && activeTab !== 'settings' ? 'commerce' : activeTab}
         onTabChange={activateTab}
         onLogout={handleLogout}
         language={language}
-        portalMode={portalMode}
+        portalMode={b2bPortalIsActive ? 'b2b' : 'olivia'}
       >
         <Suspense fallback={<div className="p-8 text-slate-400">Laster modul...</div>}>
           {renderContent()}

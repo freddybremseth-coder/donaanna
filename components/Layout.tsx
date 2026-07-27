@@ -45,7 +45,6 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
 
   const b2bMenuItems: MenuItem[] = [
     { id: 'commerce', icon: Store, label: 'B2B Portal' },
-    ...(user.role === 'b2b_customer' ? [] : [{ id: 'dashboard', icon: Sprout, label: 'Olivia OS' }]),
   ];
 
   const adminItems: MenuItem[] = user.role === 'super_admin' ? [
