@@ -141,7 +141,7 @@ const CommerceHub: React.FC = () => {
       setQuoteOpen(false);
       setQuoteForm({ company: '', contactName: '', email: '', packageName: 'Chef tasting kit', quantity: 1, amount: 0, notes: '' });
       setNotice(result.notificationSaved
-        ? 'Tilbud lagret, og varsel er lagt i Olivia/RealtyFlow-outbox.'
+        ? 'Tilbud lagret, og varsel er lagt i Doña Anna B2B/RealtyFlow-outbox.'
         : 'Tilbud lagret. Varsel-tabellen var ikke tilgjengelig ennå.');
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Kunne ikke lagre tilbudet.');
@@ -163,10 +163,10 @@ const CommerceHub: React.FC = () => {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-300">Doña Anna Commerce</p>
-          <h2 className="mt-2 text-3xl font-bold text-white">B2B-salg, kundeportal, ordre og faktura samlet i Olivia OS</h2>
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-300">Doña Anna B2B Portal</p>
+          <h2 className="mt-2 text-3xl font-bold text-white">Businessportal for kunder, ordre, faktura og produktinformasjon</h2>
           <p className="mt-2 max-w-3xl text-slate-400">
-            Dette skal fungere som et kommersielt kontrollrom: bygg pipeline fra tasting kit til fast kunde, knytt ordre til batch, og gjenbruk produktfortelling på web, e-post, QR og produktark.
+            B2B er for restauranter, butikker og distributører. Olivia OS er gårdsstyringen i bakgrunnen som leverer batch, kvalitet og sporbarhet når portalen trenger det.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -331,7 +331,7 @@ const CommerceHub: React.FC = () => {
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-300">B2B tilbud</p>
                 <h3 className="mt-2 text-2xl font-bold text-white">Nytt tilbud / ordreutkast</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-400">Lagres i Olivia commerce og legger en ordrevarsling klar for RealtyFlow.</p>
+                <p className="mt-2 text-sm leading-6 text-slate-400">Lagres i Doña Anna B2B og legger en ordrevarsling klar for RealtyFlow.</p>
               </div>
               <button type="button" onClick={() => setQuoteOpen(false)} className="rounded-xl border border-white/10 p-2 text-slate-400 hover:text-white" aria-label="Lukk">
                 <X size={18} />
@@ -399,7 +399,7 @@ function DataTable({ title, rows }: { title: string; rows: Array<Record<string, 
       <div className="flex flex-col gap-4 border-b border-white/10 p-5 md:flex-row md:items-center md:justify-between">
         <div>
           <h3 className="text-xl font-bold text-white">{title}</h3>
-          <p className="mt-1 text-sm text-slate-500">Felles datagrunnlag for Olivia OS, Admin, B2B og donaanna.com.</p>
+          <p className="mt-1 text-sm text-slate-500">Felles businessgrunnlag for B2B-portalen, donaanna.com og RealtyFlow.</p>
         </div>
         <div className="relative w-full md:w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />

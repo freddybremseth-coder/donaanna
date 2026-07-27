@@ -38,6 +38,7 @@ function isRecoveryUrl(): boolean {
 const LEGACY_APP_PATH = '/app';
 const B2B_PORTAL_PATH = '/b2b';
 const OLIVIA_OS_PATH = '/olivia';
+type PortalMode = 'olivia' | 'b2b';
 
 function currentPath(): string {
   if (typeof window === 'undefined') return '/';
@@ -102,6 +103,7 @@ const App: React.FC = () => {
   const [loginDefaultMode, setLoginDefaultMode] = useState<'login' | 'register'>('login');
   const [postLoginTab, setPostLoginTab] = useState(() => isB2BUrl() ? 'commerce' : 'dashboard');
   const postLoginTabRef = useRef(isB2BUrl() ? 'commerce' : 'dashboard');
+  const [portalMode, setPortalMode] = useState<PortalMode>(() => isB2BUrl() ? 'b2b' : 'olivia');
   const [isPasswordRecovery, setIsPasswordRecovery] = useState<boolean>(isRecoveryUrl);
 
   const [weatherData, setWeatherData] = useState<any>(null);
@@ -115,11 +117,24 @@ const App: React.FC = () => {
   const rememberPostLoginTab = (targetTab: string) => {
     postLoginTabRef.current = targetTab;
     setPostLoginTab(targetTab);
+    setPortalMode(targetTab === 'commerce' ? 'b2b' : 'olivia');
   };
 
   const resolveTargetTab = (targetTab: string, admin: boolean) => (
     targetTab === 'admin' && !admin ? 'dashboard' : targetTab
   );
+
+  const activateTab = (targetTab: string, admin = isAdmin) => {
+    const nextTab = resolveTargetTab(targetTab, admin);
+    setActiveTab(nextTab);
+    setPortalMode(nextTab === 'commerce' ? 'b2b' : 'olivia');
+    if (typeof window !== 'undefined') {
+      const nextPath = nextTab === 'commerce' ? B2B_PORTAL_PATH : OLIVIA_OS_PATH;
+      if (window.location.pathname !== nextPath) {
+        window.history.replaceState({}, '', nextPath);
+      }
+    }
+  };
 
   // Load Olivia farm data only after the user enters the app.
   useEffect(() => {
@@ -211,7 +226,7 @@ const App: React.FC = () => {
         setIsAdmin(result.isAdmin);
         setIsLoggedIn(true);
         setShowLogin(false);
-        setActiveTab(resolveTargetTab(postLoginTabRef.current, result.isAdmin));
+        activateTab(postLoginTabRef.current, result.isAdmin);
       }).catch(err => {
         console.warn('[auth] session hydration failed:', err);
       }).finally(markAuthReady);
@@ -253,7 +268,7 @@ const App: React.FC = () => {
     setIsAdmin(admin);
     setIsLoggedIn(true);
     setIsAuthReady(true);
-    setActiveTab(resolveTargetTab(postLoginTabRef.current, admin));
+    activateTab(postLoginTabRef.current, admin);
     setShowLogin(false);
   };
 
@@ -265,7 +280,7 @@ const App: React.FC = () => {
     setUser(OLIVIA_FALLBACK_USER);
     setParcels(EMPTY_OLIVIA_PARCELS);
     setSelectedParcel(null);
-    setActiveTab('dashboard');
+    activateTab('dashboard', false);
     // Wipe any legacy localStorage session left over from the old flow
     localStorage.removeItem('olivia_session');
   };
@@ -295,7 +310,7 @@ const App: React.FC = () => {
     }
     rememberPostLoginTab(targetTab);
     if (isLoggedIn) {
-      setActiveTab(resolveTargetTab(targetTab, isAdmin));
+      activateTab(targetTab, isAdmin);
       return;
     }
     if (!isAuthReady) {
@@ -365,7 +380,7 @@ const App: React.FC = () => {
         weatherData={weatherData}
         locationName={selectedParcel?.name || locationName}
         parcels={parcels}
-        onNavigate={setActiveTab}
+        onNavigate={activateTab}
       />;
       case 'dashboard_classic': return <Dashboard language={language} weatherData={weatherData} locationName={locationName} />;
       case 'consultant': return <FieldConsultantView />;
@@ -393,7 +408,7 @@ const App: React.FC = () => {
         weatherData={weatherData}
         locationName={selectedParcel?.name || locationName}
         parcels={parcels}
-        onNavigate={setActiveTab}
+        onNavigate={activateTab}
       />;
     }
   };
@@ -403,9 +418,10 @@ const App: React.FC = () => {
       <Layout
         user={user}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={activateTab}
         onLogout={handleLogout}
         language={language}
+        portalMode={portalMode}
       >
         <Suspense fallback={<div className="p-8 text-slate-400">Laster modul...</div>}>
           {renderContent()}

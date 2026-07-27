@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, Mail, Lock, User, Eye, EyeOff, AlertCircle, Sprout, Loader2, CheckCircle2, ArrowLeft, Building2 } from 'lucide-react';
+import { X, Mail, Lock, User, Eye, EyeOff, AlertCircle, Sprout, Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { signInWithPassword, signUpWithPassword, sendPasswordReset, AuthResult } from '../services/auth';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import type { UserProfile } from '../types';
@@ -27,7 +27,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const isB2BPortal = portalContext === 'b2b';
-  const portalName = isB2BPortal ? 'Doña Anna B2B' : 'Olivia OS';
+  const portalName = isB2BPortal ? 'B2B Portal' : 'Olivia OS';
   const portalIntro = isB2BPortal
     ? 'Portal for restauranter, butikker og distributører.'
     : 'Styringsverktøy for gården, produksjon og parseller.';
@@ -106,23 +106,34 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div data-testid="login-modal" className="bg-[#0f0f10] border border-white/10 rounded-[2.5rem] p-10 w-full max-w-md relative shadow-2xl">
+      <div data-testid="login-modal" className={`w-full max-w-md relative rounded-[2.5rem] p-10 shadow-2xl ${isB2BPortal ? 'border border-[#d4af37]/20 bg-[#090806]' : 'border border-white/10 bg-[#0f0f10]'}`}>
         <button onClick={onClose} className="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors">
           <X size={20} />
         </button>
 
-        <div className="flex items-center gap-3 mb-8">
-          <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isB2BPortal ? 'bg-[#d4af37]' : 'bg-green-500'}`}>
-            {isB2BPortal ? <Building2 size={20} className="text-black" /> : <Sprout size={20} className="text-black" />}
+        {isB2BPortal ? (
+          <div className="mb-8">
+            <img
+              src="/donaanna/uploads/dona-anna-b2b-portal-logo.svg"
+              alt="Doña Anna B2B Portal"
+              className="h-auto w-full max-w-[320px]"
+            />
+            <h1 data-testid="login-portal-heading" className="sr-only">Doña Anna B2B Portal</h1>
+            <p className="mt-4 text-xs text-[#cdbf95]">{portalIntro}</p>
           </div>
-          <div>
-            <h1 data-testid="login-portal-heading" className="text-xl font-bold text-white">
-              {isB2BPortal ? 'Doña Anna ' : 'Olivia '}
-              <span className={accentTextClass}>{isB2BPortal ? 'B2B' : 'OS'}</span>
-            </h1>
-            <p className="mt-1 text-xs text-slate-500">{portalIntro}</p>
+        ) : (
+          <div className="flex items-center gap-3 mb-8">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500">
+              <Sprout size={20} className="text-black" />
+            </div>
+            <div>
+              <h1 data-testid="login-portal-heading" className="text-xl font-bold text-white">
+                Olivia <span className={accentTextClass}>OS</span>
+              </h1>
+              <p className="mt-1 text-xs text-slate-500">{portalIntro}</p>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Config missing banner (surfaces the real cause of "spinner hangs forever") */}
         {!isSupabaseConfigured && (
