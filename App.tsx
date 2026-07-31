@@ -40,6 +40,11 @@ const B2B_PORTAL_PATH = '/b2b';
 const OLIVIA_OS_PATH = '/olivia';
 type PortalMode = 'olivia' | 'b2b';
 const B2B_ALLOWED_TABS = new Set(['commerce', 'settings']);
+const OWNER_EMAILS = new Set([
+  'freddy@zenecohomes.com',
+  'freddy.bremseth@gmail.com',
+  'freddyogannabremseth@gmail.com',
+]);
 
 function currentPath(): string {
   if (typeof window === 'undefined') return '/';
@@ -60,6 +65,20 @@ function isPortalUrl(): boolean {
 
 function pathForTargetTab(targetTab: string): string {
   return targetTab === 'commerce' ? B2B_PORTAL_PATH : OLIVIA_OS_PATH;
+}
+
+function isOwnerEmail(email?: string): boolean {
+  return !!email && OWNER_EMAILS.has(email.trim().toLowerCase());
+}
+
+function isB2BOnlyUser(role: UserProfile['role'], email?: string): boolean {
+  return role === 'b2b_customer' && !isOwnerEmail(email);
+}
+
+function portalModeForTargetTab(targetTab: string, currentPortalMode: PortalMode): PortalMode {
+  if (targetTab === 'commerce') return 'b2b';
+  if (targetTab === 'settings') return currentPortalMode;
+  return 'olivia';
 }
 
 const AuthLoadingScreen: React.FC = () => (
@@ -118,7 +137,7 @@ const App: React.FC = () => {
   const rememberPostLoginTab = (targetTab: string) => {
     postLoginTabRef.current = targetTab;
     setPostLoginTab(targetTab);
-    setPortalMode(targetTab === 'commerce' ? 'b2b' : 'olivia');
+    setPortalMode(portalModeForTargetTab(targetTab, portalMode));
   };
 
   const resolveTargetTab = (targetTab: string, admin: boolean, lockToB2B: boolean) => {
@@ -127,10 +146,16 @@ const App: React.FC = () => {
     return targetTab;
   };
 
-  const activateTab = (targetTab: string, admin = isAdmin, role: UserProfile['role'] = user.role) => {
-    const lockToB2B = portalMode === 'b2b' || role === 'b2b_customer';
+  const activateTab = (
+    targetTab: string,
+    admin = isAdmin,
+    role: UserProfile['role'] = user.role,
+    email = user.email,
+  ) => {
+    const requestedPortalMode = portalModeForTargetTab(targetTab, portalMode);
+    const lockToB2B = requestedPortalMode === 'b2b' || isB2BOnlyUser(role, email);
     const nextTab = resolveTargetTab(targetTab, admin, lockToB2B);
-    const nextPortalMode = lockToB2B || nextTab === 'commerce' ? 'b2b' : 'olivia';
+    const nextPortalMode = lockToB2B ? 'b2b' : portalModeForTargetTab(nextTab, requestedPortalMode);
     setActiveTab(nextTab);
     setPortalMode(nextPortalMode);
     if (typeof window !== 'undefined') {
@@ -143,7 +168,7 @@ const App: React.FC = () => {
 
   // Load Olivia farm data only after the user enters the app.
   useEffect(() => {
-    if (!isAuthReady || !isLoggedIn || showPublicSite || portalMode === 'b2b' || user.role === 'b2b_customer') return;
+    if (!isAuthReady || !isLoggedIn || showPublicSite || portalMode === 'b2b' || isB2BOnlyUser(user.role, user.email)) return;
     let cancelled = false;
 
     import('./services/db')
@@ -162,10 +187,10 @@ const App: React.FC = () => {
       .catch(err => console.warn('[migration] failed', err));
 
     return () => { cancelled = true; };
-  }, [isAuthReady, isLoggedIn, showPublicSite, portalMode, user.role]);
+  }, [isAuthReady, isLoggedIn, showPublicSite, portalMode, user.role, user.email]);
 
   useEffect(() => {
-    const lockToB2B = portalMode === 'b2b' || user.role === 'b2b_customer';
+    const lockToB2B = portalMode === 'b2b' || isB2BOnlyUser(user.role, user.email);
     if (!isLoggedIn || showPublicSite || !lockToB2B) return;
 
     if (portalMode !== 'b2b') {
@@ -180,7 +205,7 @@ const App: React.FC = () => {
     if (typeof window !== 'undefined' && window.location.pathname !== B2B_PORTAL_PATH) {
       window.history.replaceState({}, '', B2B_PORTAL_PATH);
     }
-  }, [activeTab, isLoggedIn, portalMode, showPublicSite, user.role]);
+  }, [activeTab, isLoggedIn, portalMode, showPublicSite, user.role, user.email]);
 
   const handleParcelSave = async (parcel: Parcel) => {
     const { upsertParcel } = await import('./services/db');
@@ -249,7 +274,7 @@ const App: React.FC = () => {
         setIsAdmin(result.isAdmin);
         setIsLoggedIn(true);
         setShowLogin(false);
-        activateTab(postLoginTabRef.current, result.isAdmin, result.user.role);
+        activateTab(postLoginTabRef.current, result.isAdmin, result.user.role, result.user.email);
       }).catch(err => {
         console.warn('[auth] session hydration failed:', err);
       }).finally(markAuthReady);
@@ -291,7 +316,7 @@ const App: React.FC = () => {
     setIsAdmin(admin);
     setIsLoggedIn(true);
     setIsAuthReady(true);
-    activateTab(postLoginTabRef.current, admin, storedUser.role);
+    activateTab(postLoginTabRef.current, admin, storedUser.role, storedUser.email);
     setShowLogin(false);
   };
 
@@ -334,7 +359,7 @@ const App: React.FC = () => {
     }
     rememberPostLoginTab(targetTab);
     if (isLoggedIn) {
-      activateTab(targetTab, isAdmin);
+      activateTab(targetTab, isAdmin, user.role, user.email);
       return;
     }
     if (!isAuthReady) {
@@ -346,7 +371,7 @@ const App: React.FC = () => {
   };
 
   const loginPortalContext = postLoginTabRef.current === 'commerce' ? 'b2b' : 'olivia';
-  const b2bPortalIsActive = portalMode === 'b2b' || user.role === 'b2b_customer';
+  const b2bPortalIsActive = portalMode === 'b2b' || isB2BOnlyUser(user.role, user.email);
 
   // Password-recovery takes priority over everything else: the user arrived
   // via the email link and needs to set a new password before anything else
@@ -452,6 +477,7 @@ const App: React.FC = () => {
         onLogout={handleLogout}
         language={language}
         portalMode={b2bPortalIsActive ? 'b2b' : 'olivia'}
+        canSwitchToOlivia={!isB2BOnlyUser(user.role, user.email)}
       >
         <Suspense fallback={<div className="p-8 text-slate-400">Laster modul...</div>}>
           {renderContent()}

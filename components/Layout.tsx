@@ -20,9 +20,10 @@ interface LayoutProps {
   onLogout: () => void;
   language: Language;
   portalMode?: PortalMode;
+  canSwitchToOlivia?: boolean;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange, onLogout, language, portalMode = 'olivia' }) => {
+const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange, onLogout, language, portalMode = 'olivia', canSwitchToOlivia = user.role !== 'b2b_customer' }) => {
   const { t } = useTranslation(language);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -45,6 +46,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
 
   const b2bMenuItems: MenuItem[] = [
     { id: 'commerce', icon: Store, label: 'B2B Portal' },
+    ...(canSwitchToOlivia ? [{ id: 'dashboard', icon: Sprout, label: 'Olivia OS' }] : []),
   ];
 
   const adminItems: MenuItem[] = user.role === 'super_admin' ? [
