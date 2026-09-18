@@ -1,9 +1,39 @@
 {
   "rewrites": [
-    { "source": "/api/ai/gemini/:path*", "destination": "/api/ai/gemini?path=:path*" },
-    { "source": "/api/ai/openai/:path*", "destination": "/api/ai/openai?path=:path*" },
-    { "source": "/api/ai/anthropic/:path*", "destination": "/api/ai/anthropic?path=:path*" },
-    { "source": "/api/catastro/:path*", "destination": "/api/catastro?path=:path*" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
+      "source": "/api/ai/gemini/:path*",
+      "destination": "/api/ai/gemini?path=:path*"
+    },
+    {
+      "source": "/api/ai/openai/:path*",
+      "destination": "/api/ai/openai?path=:path*"
+    },
+    {
+      "source": "/api/ai/anthropic/:path*",
+      "destination": "/api/ai/anthropic?path=:path*"
+    },
+    {
+      "source": "/api/catastro/:path*",
+      "destination": "/api/catastro?path=:path*"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(app|olivia|b2b)(/:path*)?",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        }
+      ]
+    }
   ]
 }
