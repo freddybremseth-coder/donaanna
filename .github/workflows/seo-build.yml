@@ -22,8 +22,8 @@ jobs:
         run: npm run build
       - name: Compile SEO serverless handlers
         run: |
-          npx esbuild api/public-article.ts api/sitemap.ts api/realtyflow/publish.ts \
+          npx esbuild api/public-article.ts api/public-listing.ts api/sitemap.ts api/realtyflow/publish.ts \
             --outdir=/tmp/donaanna-api-check \
             --bundle --platform=node --format=esm --external:@supabase/supabase-js
       - name: Validate deployment routing configuration
-        run: node -e "const c=require('./vercel.json'); if(!c.rewrites?.some(r=>r.source==='/sitemap.xml') || !c.rewrites?.some(r=>r.source==='/magasin/:slug')) process.exit(1)"
+        run: node -e "const c=require('./vercel.json'); if(!c.rewrites?.some(r=>r.source==='/sitemap.xml') || !c.rewrites?.some(r=>r.source==='/magasin/:slug') || !c.rewrites?.some(r=>r.source==='/magasin')) process.exit(1)"
