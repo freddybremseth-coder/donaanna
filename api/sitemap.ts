@@ -8,8 +8,8 @@ function publishedPostUrl(post: { slug?: string; destination_id?: string; destin
   const slug = String(post.slug || '').trim();
   // Restrict sitemap entries to the public editorial rewrites in vercel.json.
   // Never let a CMS row advertise a private route, external host, or query.
-  if (!slug || slug.length > 160 || /[\\/?#\\x00-\\x1f]/.test(slug) || slug === '.' || slug === '..') return null;
-  const destination = String(post.destination_path || '').trim().replace(/^\\/+|\\/+$/g, '') || String(post.destination_id || 'magasin');
+  if (!slug || slug.length > 160 || /[\/?#\x00-\x1f]/.test(slug) || slug === '.' || slug === '..') return null;
+  const destination = String(post.destination_path || '').trim().replace(/^\/+|\/+$/g, '') || String(post.destination_id || 'magasin');
   if (!PUBLIC_DESTINATIONS.has(destination)) return null;
   return `${BASE}/${destination}/${encodeURIComponent(slug)}`;
 }
