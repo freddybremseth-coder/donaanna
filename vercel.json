@@ -1,6 +1,38 @@
 {
   "rewrites": [
     {
+      "source": "/magasin",
+      "destination": "/api/public-listing?destination=magasin"
+    },
+    {
+      "source": "/magasin/",
+      "destination": "/api/public-listing?destination=magasin"
+    },
+    {
+      "source": "/artikler",
+      "destination": "/api/public-listing?destination=artikler"
+    },
+    {
+      "source": "/artikler/",
+      "destination": "/api/public-listing?destination=artikler"
+    },
+    {
+      "source": "/blogg",
+      "destination": "/api/public-listing?destination=blogg"
+    },
+    {
+      "source": "/blogg/",
+      "destination": "/api/public-listing?destination=blogg"
+    },
+    {
+      "source": "/oppskrifter",
+      "destination": "/api/public-listing?destination=oppskrifter"
+    },
+    {
+      "source": "/oppskrifter/",
+      "destination": "/api/public-listing?destination=oppskrifter"
+    },
+    {
       "source": "/magasin/:slug",
       "destination": "/api/public-article?destination=magasin&slug=:slug"
     },
