@@ -806,6 +806,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             <button data-testid="b2b-portal-footer" onClick={onLogin}>B2B Portal</button>
             <button data-testid="olivia-os-footer" onClick={onAdminLogin}>Olivia OS</button>
             <a href="mailto:info@donaanna.com">info@donaanna.com</a>
+            <a href="https://www.freddybremseth.com/olivenolje-og-dona-anna.html" target="_blank" rel="noopener noreferrer">Historien bak gården</a>
           </div>
         </div>
       </footer>

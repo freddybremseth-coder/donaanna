@@ -113,6 +113,35 @@ const PublicContentPage: React.FC<PublicContentPageProps> = ({ onLogin, onAdminL
     post?.image_url || posts.find(item => item.image_url)?.image_url || DEFAULT_CONTENT_IMAGE
   ), [post, posts]);
 
+  useEffect(() => {
+    const canonicalUrl = `https://www.donaanna.com${route.destination.path}${route.slug ? `/${route.slug}` : ''}`;
+    const title = post ? `${post.title} | Doña Anna` : `${route.destination.label} | Doña Anna`;
+    const description = post?.summary || route.destination.intro;
+    document.title = title;
+
+    const ensureMeta = (selector: string, attrs: Record<string, string>) => {
+      let element = document.head.querySelector<HTMLMetaElement>(selector);
+      if (!element) {
+        element = document.createElement('meta');
+        document.head.appendChild(element);
+      }
+      Object.entries(attrs).forEach(([key, value]) => element!.setAttribute(key, value));
+    };
+    ensureMeta('meta[name="description"]', { name: 'description', content: description });
+    ensureMeta('meta[property="og:title"]', { property: 'og:title', content: title });
+    ensureMeta('meta[property="og:description"]', { property: 'og:description', content: description });
+    ensureMeta('meta[property="og:url"]', { property: 'og:url', content: canonicalUrl });
+    ensureMeta('meta[property="og:type"]', { property: 'og:type', content: route.slug ? 'article' : 'website' });
+
+    let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      document.head.appendChild(canonical);
+    }
+    canonical.href = canonicalUrl;
+  }, [route.destination, route.slug, post]);
+
   const navLinks = Object.values(destinations);
 
   return (

@@ -72,6 +72,29 @@ function cleanPath(value: string) {
   return path.startsWith('/') ? path : `/${path}`;
 }
 
+const INDEXNOW_KEY = 'd47e8b0f74a34bb0b197f22472188375';
+const INDEXNOW_BASE = 'https://www.donaanna.com';
+
+async function submitIndexNow(paths: string[]) {
+  const urlList = Array.from(new Set(paths.filter(Boolean).map(path => new URL(path, INDEXNOW_BASE).toString())));
+  if (!urlList.length) return { ok: true, submitted: 0, status: 204 };
+  try {
+    const response = await fetch('https://api.indexnow.org/indexnow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify({
+        host: 'www.donaanna.com',
+        key: INDEXNOW_KEY,
+        keyLocation: `${INDEXNOW_BASE}/${INDEXNOW_KEY}.txt`,
+        urlList,
+      }),
+    });
+    return { ok: response.status === 200 || response.status === 202, submitted: urlList.length, status: response.status };
+  } catch {
+    return { ok: false, submitted: 0, status: 0 };
+  }
+}
+
 function pickEnv(...keys: string[]) {
   for (const key of keys) {
     const value = process.env[key];
@@ -145,7 +168,7 @@ export default async function handler(req: IncomingMessage & { method?: string }
     const brandId = cleanString(payload.brand?.id) || 'donaanna';
     const slug = slugify(cleanString(payload.content?.slug) || cleanString(payload.content?.title));
 
-    let query = supabase.from('website_posts').delete();
+    let query = supabase.from('website_posts').delete().select('slug,destination_path');
     if (sourceId) {
       query = query
         .eq('source_system', sourceSystem)
@@ -158,13 +181,26 @@ export default async function handler(req: IncomingMessage & { method?: string }
         .eq('slug', slug);
     }
 
-    const { error } = await query;
+    const { data, error } = await query;
     if (error) {
       json(res, 500, { error: error.message });
       return;
     }
 
-    json(res, 200, { success: true, deleted: true, slug });
+    const deletedPaths = (data || [])
+      .map(row => {
+        const deletedSlug = cleanString(row.slug);
+        const deletedPath = cleanPath(cleanString(row.destination_path) || `/${destinationId}`);
+        return deletedSlug ? `${deletedPath.replace(/\/$/, '')}/${deletedSlug}` : '';
+      })
+      .filter(Boolean);
+
+    if (!deletedPaths.length && slug) {
+      deletedPaths.push(`${cleanPath(cleanString(destination.path) || `/${destinationId}`).replace(/\/$/, '')}/${slug}`);
+    }
+
+    const indexNow = await submitIndexNow(deletedPaths);
+    json(res, 200, { success: true, deleted: true, slug, deletedPaths, indexNow });
     return;
   }
 
@@ -228,6 +264,7 @@ export default async function handler(req: IncomingMessage & { method?: string }
   }
 
   const url = `${destinationPath.replace(/\/$/, '')}/${slug}`;
+  const indexNow = status === 'published' ? await submitIndexNow([url]) : { ok: true, submitted: 0, status: 204 };
   json(res, 200, {
     success: true,
     id: data.id,
@@ -236,5 +273,6 @@ export default async function handler(req: IncomingMessage & { method?: string }
     url,
     external_url: url,
     published_at: data.published_at,
+    indexNow,
   });
 }
