@@ -1,6 +1,22 @@
 {
   "rewrites": [
     {
+      "source": "/magasin/:slug",
+      "destination": "/api/public-article?destination=magasin&slug=:slug"
+    },
+    {
+      "source": "/artikler/:slug",
+      "destination": "/api/public-article?destination=artikler&slug=:slug"
+    },
+    {
+      "source": "/blogg/:slug",
+      "destination": "/api/public-article?destination=blogg&slug=:slug"
+    },
+    {
+      "source": "/oppskrifter/:slug",
+      "destination": "/api/public-article?destination=oppskrifter&slug=:slug"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "/api/sitemap"
     },
