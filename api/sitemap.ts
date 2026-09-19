@@ -2,6 +2,22 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { createClient } from '@supabase/supabase-js';
 
 const BASE = 'https://www.donaanna.com';
+const PUBLIC_DESTINATIONS = new Set(['magasin', 'artikler', 'blogg', 'oppskrifter']);
+
+function publishedPostUrl(post: { slug?: string; destination_id?: string; destination_path?: string }): string | null {
+  const slug = String(post.slug || '').trim();
+  // Restrict sitemap entries to the public editorial rewrites in vercel.json.
+  // Never let a CMS row advertise a private route, external host, or query.
+  if (!slug || slug.length > 160 || /[\/?#\x00-\x1f]/.test(slug) || slug === '.' || slug === '..') return null;
+  const destination = String(post.destination_path || '').trim().replace(/^\/+|\/+$/g, '') || String(post.destination_id || 'magasin');
+  if (!PUBLIC_DESTINATIONS.has(destination)) return null;
+  return `${BASE}/${destination}/${encodeURIComponent(slug)}`;
+}
+
+function safeLastMod(value: string | undefined): string {
+  return value && Number.isFinite(Date.parse(value)) ? new Date(value).toISOString() : '';
+}
+
 
 function escapeXml(value: string) {
   return value.replace(/[<>&'"]/g, char => ({ '<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;' }[char] || char));
@@ -33,11 +49,11 @@ export default async function handler(_req: IncomingMessage, res: ServerResponse
   const urls = [
     ...staticPaths.map(path => ({ loc: `${BASE}${path}`, lastmod: '' })),
     ...rows
-      .filter(row => row.slug)
       .map(row => ({
-        loc: `${BASE}${String(row.destination_path || '/' + (row.destination_id || 'magasin')).replace(/\/$/, '')}/${row.slug}`,
-        lastmod: row.updated_at || row.published_at || row.created_at || '',
-      })),
+        loc: publishedPostUrl(row),
+        lastmod: safeLastMod(row.updated_at || row.published_at || row.created_at),
+      }))
+      .filter((row): row is { loc: string; lastmod: string } => row.loc !== null),
   ];
 
   const seen = new Set<string>();
@@ -46,7 +62,7 @@ export default async function handler(_req: IncomingMessage, res: ServerResponse
     .map(item => [
       '  <url>',
       `    <loc>${escapeXml(item.loc)}</loc>`,
-      item.lastmod ? `    <lastmod>${new Date(item.lastmod).toISOString()}</lastmod>` : '',
+      item.lastmod ? `    <lastmod>${item.lastmod}</lastmod>` : '',
       '  </url>',
     ].filter(Boolean).join('\n'))
     .join('\n');
