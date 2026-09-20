@@ -1,11 +1,11 @@
 
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="no" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Doña Anna | Extra Virgin Olive Oil from Biar, Alicante</title>
-  <meta name="description" content="Doña Anna — estate extra virgin olive oil and table olives from Biar, Alicante. Early harvest, batch traceability, varieties, tasting and B2B information.">
+  <title>Doña Anna | Olivenolje og bordoliven fra Biar, Alicante</title>
+  <meta name="description" content="Doña Anna – extra virgin olivenolje og bordoliven fra Biar i Alicante. Oppdag olivensorter, høsting, smak, sporbarhet og våre artikler og oppskrifter.">
   <link rel="canonical" href="https://www.donaanna.com/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://www.donaanna.com/">
@@ -109,7 +109,28 @@
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <!-- First-response content for search crawlers, accessibility and people
+         loading the application. The React app replaces this fallback once
+         its normal public landing page starts; it is not a second visible H1. -->
+    <main style="max-width:1120px;margin:0 auto;padding:clamp(32px,7vw,88px) 22px 90px;line-height:1.65;">
+      <p style="color:#d4af37;letter-spacing:.12em;text-transform:uppercase;font-size:.8rem;">Olivenolje fra Biar, Alicante</p>
+      <h1 style="font-family:Georgia,serif;font-size:clamp(2.4rem,6vw,4.8rem);line-height:1.1;max-width:850px;">
+        Doña Anna – olivenolje og bordoliven fra Biar
+      </h1>
+      <p style="max-width:750px;font-size:1.17rem;color:#e6decf;">
+        Oppdag våre olivenlunder i Alicante, tidlig høstet extra virgin olivenolje
+        og bordoliven. Les om opprinnelse, olivensorter, høsting, smak og
+        sporbarhet, og utforsk innhold for matinteresserte og profesjonelle kjøkken.
+      </p>
+      <nav aria-label="Utforsk Doña Anna" style="display:flex;flex-wrap:wrap;gap:18px;margin-top:32px;">
+        <a style="color:#e6c77d;" href="/magasin">Magasin om olivenolje</a>
+        <a style="color:#e6c77d;" href="/artikler">Fagartikler</a>
+        <a style="color:#e6c77d;" href="/oppskrifter">Oppskrifter med olivenolje</a>
+      </nav>
+      <p style="color:#bfb6a5;margin-top:32px;">Den interaktive Doña Anna-siden åpnes …</p>
+    </main>
+  </div>
   <script type="module" src="index.tsx"></script>
 </body>
 </html>
