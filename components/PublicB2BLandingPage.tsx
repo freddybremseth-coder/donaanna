@@ -32,7 +32,7 @@ type Locale = 'no' | 'es' | 'en';
 
 const copy = {
   no: {
-    eyebrow: 'Økologisk extra virgin olivenolje · Biar, Alicante',
+    eyebrow: 'Økologisk ultra-premium estate-olje · Biar, Alicante',
     headline: 'Doña Anna fra hjertet av Alicante.',
     subhead: 'Tidlig høstet olivenolje og bordoliven fra våre lunder i Biar. Skapt for kjøkken som verdsetter smak, opprinnelse, sporbarhet og en historie gjestene kan kjenne igjen ved bordet.',
     cta: 'Bestill tasting kit',
@@ -42,7 +42,7 @@ const copy = {
     traceText: 'Hver batch dokumenteres med høstedato, parsell, sort, sensorisk profil og analyseverdier. QR-sporingen gjør opprinnelsen synlig for kokk, innkjøper og gjest.',
   },
   es: {
-    eyebrow: 'Aceite de alta gama · Biar, Alicante',
+    eyebrow: 'Aceite ecológico de alta gama · Biar, Alicante',
     headline: 'Doña Anna para chefs exigentes.',
     subhead: 'Aceite ecológico y aceitunas de mesa de Biar. Cosecha temprana, trazabilidad por lote y una historia clara para restaurantes, distribuidores y tiendas gourmet.',
     cta: 'Solicitar tasting kit',
@@ -52,7 +52,7 @@ const copy = {
     traceText: 'Cada botella puede mostrar lote, fecha de cosecha, parcela, variedad, perfil sensorial y análisis desde Olivia OS.',
   },
   en: {
-    eyebrow: 'Ultra-premium estate oil · Biar, Alicante',
+    eyebrow: 'Organic ultra-premium estate oil · Biar, Alicante',
     headline: 'Doña Anna for uncompromising chefs.',
     subhead: 'Organic olive oil and table olives from Biar. Early harvested, batch-traceable and built for restaurants, distributors and specialty buyers who need a story worth serving.',
     cta: 'Order tasting kit',
@@ -83,7 +83,7 @@ const portfolio = [
   {
     name: 'Verde Vivo',
     labelName: 'DOÑA ANNA · VERDE VIVO',
-    format: '500 ml · Cosecha Temprana I',
+    format: '250 ml / 500 ml · Cosecha Temprana I',
     role: 'Intens finishing oil',
     photo: imagePaths.verdeVivoHero,
     text: 'Vår mest intense tidlig-høstede olje. Grønn fruktighet, tydelig bitterhet og lang pepperfinish gjør den sterk på grillet fisk, tomat, brød, salater og retter som trenger en frisk avslutning.',
@@ -136,7 +136,7 @@ const specs = [
   ['Kvalitet', 'Extra virgin med sensorisk kontroll og analyse per batch'],
   ['Polyfenoler', 'Måles per premiumbatch og knyttes til sporbar dokumentasjon'],
   ['Sorter', 'Genovesa · Gordal · Changlot Real · Picual'],
-  ['Formater', '500 ml · 2 L · 5 L · bordoliven'],
+  ['Formater', '250 ml · 500 ml · 2 L · 5 L · bordoliven'],
 ];
 
 const b2bPackages = [
@@ -162,7 +162,7 @@ const b2bPackages = [
 
 const buyerProof: Array<{ icon: React.ElementType; title: string; text: string }> = [
   { icon: Building2, title: 'B2B-priser', text: 'Egne vilkår for restaurant, butikk og distributør.' },
-  { icon: Package, title: 'Salgbare formater', text: '500 ml, bordoliven og 2 L / 5 L chef-format.' },
+  { icon: Package, title: 'Salgbare formater', text: '250 ml, 500 ml, bordoliven og 2 L / 5 L chef-format.' },
   { icon: QrCode, title: 'QR-sporbarhet', text: 'Batchhistorie fra parsell og høsting til flaske.' },
   { icon: ShieldCheck, title: 'Innkjøpsklar', text: 'Produktark, sensorikk og logistikkdata samlet.' },
 ];
@@ -201,9 +201,9 @@ const livingTimeline = [
 const knowledgeCards = [
   {
     title: 'Polyfenolens kraft',
-    kicker: 'Naturlige antioksidanter',
+    kicker: 'Målt per batch',
     image: imagePaths.donaAnnaPouringBread,
-    text: 'Ekstra virgin olivenolje fra tidlig høsting kan inneholde et høyt nivå av polyfenoler. De gir bitterhet, pepperfølelse og er en viktig del av oljens ernæringsmessige profil.',
+    text: 'Tidlig høstet extra virgin olivenolje har høyere innhold av polyfenoler. De gir bitterhet og pepperfølelse, og nivået analyseres og dokumenteres for hver premiumbatch.',
   },
   {
     title: 'Regenerativ drift',
@@ -245,7 +245,7 @@ const visualDirections = [
   {
     title: 'Hele kolleksjonen',
     image: imagePaths.raizAntiguaCleanFamily,
-    text: 'Kolleksjonen samler olje og bordoliven i et visuelt språk av mørkt glass, kremfarget etikett, DA-monogram og Doña Annas rolige signatur.',
+    text: 'Kolleksjonen samler olje og bordoliven i et visuelt språk av mørkt glass, kremfarget etikett, figurmerket og Doña Annas rolige signatur.',
   },
 ];
 
@@ -307,7 +307,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
       <nav className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#0d0d0d]/82 px-4 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between">
           <a href="#top" className="flex items-center gap-3">
-            <img src="/labels/luxury/dona-anna-monogram-da.svg" alt="Doña Anna DA monogram" className="h-10 w-10 object-contain" />
+            <img src="/labels/dona-anna-figure.svg" alt="Doña Anna" className="h-10 w-10 object-contain invert" />
             <div>
               <p className="font-serif text-sm font-semibold leading-none tracking-[0.38em]">DOÑA ANNA</p>
               <p className="text-[11px] uppercase tracking-[0.22em] text-[#d4af37]">Biar · Alicante</p>
@@ -479,7 +479,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Doña Anna</p>
               <h3 className="mt-3 font-serif text-3xl md:text-4xl">En samlet visuell identitet.</h3>
               <p className="mt-4 leading-7 text-white/62">
-                DA-monogrammet, navnet, Biar/Alicante og produktfamilien danner én tydelig flate. Det gir gjenkjennelse på nettside, video, smaksprøver, presentasjoner og emballasje.
+                Figurmerket, navnet, Biar/Alicante og produktfamilien danner én tydelig flate. Det gir gjenkjennelse på nettside, video, smaksprøver, presentasjoner og emballasje.
               </p>
             </div>
           </div>
@@ -560,7 +560,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             <div className="mb-12 grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#8a6a19]">Kunnskap</p>
-                <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Smak, helse og jord henger sammen.</h2>
+                <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Smak, jord og høstetid henger sammen.</h2>
               </div>
               <p className="self-end text-lg leading-8 text-black/66">
                 Premium extra virgin olivenolje handler om mer enn en grønn flaske. Høstingstidspunkt, polyfenoler, jordliv, ekstraksjon og sensorisk kontroll avgjør både smaken, holdbarheten og opplevelsen ved bordet.
@@ -683,7 +683,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
         </section>
 
-        <section className="bg-[#17130d] px-5 py-16 md:px-8">
+        <section className="bg-[#111111] px-5 py-16 md:px-8">
           <div className="mx-auto flex max-w-7xl flex-col gap-6 border border-[#d4af37]/30 bg-black/24 p-6 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#d4af37]">For restauranter og innkjøpere</p>
@@ -801,7 +801,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
       <footer className="border-t border-white/10 bg-[#0d0d0d] px-5 py-8 md:px-8">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <p className="font-serif text-lg tracking-[0.18em]">DOÑA ANNA</p>
+          <div className="flex items-center gap-3">
+            <img src="/labels/dona-anna-figure.svg" alt="" className="h-8 w-8 object-contain invert" />
+            <p className="font-serif text-lg tracking-[0.18em]">DOÑA ANNA</p>
+          </div>
           <div className="flex flex-wrap gap-4 text-xs uppercase tracking-[0.18em] text-white/54">
             <button data-testid="b2b-portal-footer" onClick={onLogin}>B2B Portal</button>
             <button data-testid="olivia-os-footer" onClick={onAdminLogin}>Olivia OS</button>

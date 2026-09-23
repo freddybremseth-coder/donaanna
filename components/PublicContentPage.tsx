@@ -149,7 +149,7 @@ const PublicContentPage: React.FC<PublicContentPageProps> = ({ onLogin, onAdminL
       <nav className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#0d0d0d]/86 px-4 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between">
           <a href="/" className="flex items-center gap-3">
-            <img src="/labels/luxury/dona-anna-monogram-da.svg" alt="Doña Anna DA monogram" className="h-10 w-10 object-contain" />
+            <img src="/labels/dona-anna-figure.svg" alt="Doña Anna" className="h-10 w-10 object-contain invert" />
             <div>
               <p className="font-serif text-sm font-semibold leading-none tracking-[0.38em]">DOÑA ANNA</p>
               <p className="text-[11px] uppercase tracking-[0.22em] text-[#d4af37]">Biar · Alicante</p>

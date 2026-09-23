@@ -12,7 +12,7 @@ All premium oil labels use:
 - QR traceability block
 
 ### Verde Vivo
-First early harvest. Highest polyphenol focus. 250 ml. Fine-dining finishing oil.
+First early harvest. Highest polyphenol focus. 250 ml / 500 ml. Fine-dining finishing oil.
 
 ### Verde Alto
 Second early harvest. High polyphenol, rounder and more scalable. 250 ml / 500 ml.
