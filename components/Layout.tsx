@@ -70,7 +70,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
 
   const inactiveMenuClass = (isMobile: boolean) => (
     isB2BPortal
-      ? `text-[#8f8876] hover:text-[#f6e7b6] ${isMobile ? '' : 'hover:bg-[#d4af37]/10'}`
+      ? `text-white/48 hover:text-[#e6d5b8] ${isMobile ? '' : 'hover:bg-[#d4af37]/10'}`
       : `text-slate-500 hover:text-slate-300 ${isMobile ? '' : 'hover:bg-white/5'}`
   );
 
@@ -102,14 +102,14 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
   );
 
   return (
-    <div className={`flex h-screen overflow-hidden text-slate-200 ${isB2BPortal ? 'bg-[#090806]' : 'bg-[#0a0a0b]'}`}>
+    <div className={`olivia-app flex h-screen overflow-hidden text-slate-200 ${isB2BPortal ? 'bg-[#0d0d0d]' : 'bg-[#0a0a0b]'}`}>
       {/* Mobile Header */}
-      <div className={`lg:hidden fixed top-0 left-0 right-0 h-16 border-b backdrop-blur-lg z-50 px-4 flex items-center justify-between ${isB2BPortal ? 'border-[#d4af37]/15 bg-[#090806]/95' : 'border-white/10 bg-black/80'}`}>
+      <div className={`lg:hidden fixed top-0 left-0 right-0 h-16 border-b backdrop-blur-lg z-50 px-4 flex items-center justify-between ${isB2BPortal ? 'border-[#d4af37]/15 bg-[#0d0d0d]/95' : 'border-white/10 bg-black/80'}`}>
         <div className="flex items-center gap-3">
           {isB2BPortal ? (
             <>
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#d4af37]/30 bg-[#15100a] p-1">
-                <img src="/labels/luxury/dona-anna-monogram-da.svg" alt="DA" className="h-full w-full object-contain" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#d4af37]/30 bg-[#080808] p-1">
+                <img src="/labels/dona-anna-figure.svg" alt="Doña Anna" className="h-full w-full object-contain invert" />
               </div>
               <div className="leading-tight">
                 <span className="block font-bold text-white tracking-tight">Doña Anna</span>
@@ -130,7 +130,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className={`lg:hidden fixed inset-0 z-40 pt-20 px-6 overflow-y-auto ${isB2BPortal ? 'bg-[#090806]/98' : 'bg-black/95'}`}>
+        <div className={`lg:hidden fixed inset-0 z-40 pt-20 px-6 overflow-y-auto ${isB2BPortal ? 'bg-[#0d0d0d]/98' : 'bg-black/95'}`}>
           <div className="space-y-2">
             {allMenuItems.map(item => renderMenuItem(item, true))}
             <div className="pt-8 border-t border-white/10 mt-8 space-y-2">
@@ -151,11 +151,11 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
       )}
 
       {/* Desktop Sidebar */}
-      <aside className={`hidden lg:flex flex-col border-r transition-all duration-300 relative ${isB2BPortal ? 'border-[#d4af37]/15 bg-[#090806]' : 'border-white/10 bg-[#0d0d0f]'} ${isSidebarOpen ? 'w-72' : 'w-20'}`}>
+      <aside className={`hidden lg:flex flex-col border-r transition-all duration-300 relative ${isB2BPortal ? 'border-[#d4af37]/15 bg-[#0d0d0d]' : 'border-white/10 bg-[#0d0d0f]'} ${isSidebarOpen ? 'w-72' : 'w-20'}`}>
         <div className="p-6 flex items-center gap-4 mb-4">
-          <div className={`flex min-w-[44px] h-11 items-center justify-center rounded-xl shadow-lg ${isB2BPortal ? 'border border-[#d4af37]/30 bg-[#15100a] p-1.5 shadow-[0_0_24px_rgba(212,175,55,0.12)]' : 'bg-gradient-to-br from-green-400 to-emerald-600 neon-glow-green'}`}>
+          <div className={`flex min-w-[44px] h-11 items-center justify-center rounded-xl shadow-lg ${isB2BPortal ? 'border border-[#d4af37]/30 bg-[#080808] p-1.5 shadow-[0_0_24px_rgba(212,175,55,0.12)]' : 'bg-green-500 neon-glow-green'}`}>
             {isB2BPortal ? (
-              <img src="/labels/luxury/dona-anna-monogram-da.svg" alt="DA" className="h-full w-full object-contain" />
+              <img src="/labels/dona-anna-figure.svg" alt="Doña Anna" className="h-full w-full object-contain invert" />
             ) : (
               <span className="font-bold text-xl text-black">O</span>
             )}
@@ -213,7 +213,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
       </aside>
 
       {/* Main Content */}
-      <main className={`flex-1 flex flex-col min-w-0 h-full overflow-hidden ${isB2BPortal ? 'bg-[#090806]' : 'bg-[#0a0a0b]'}`}>
+      <main className={`flex-1 flex flex-col min-w-0 h-full overflow-hidden ${isB2BPortal ? 'bg-[#0d0d0d]' : 'bg-[#0a0a0b]'}`}>
         <div className="flex-1 overflow-y-auto p-4 md:p-8 mt-16 lg:mt-0 custom-scrollbar">
           {children}
         </div>
