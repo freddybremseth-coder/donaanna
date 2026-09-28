@@ -5,7 +5,6 @@ import {
   Building2,
   Droplets,
   FileText,
-  Languages,
   Leaf,
   LockKeyhole,
   Menu,
@@ -28,39 +27,15 @@ interface LandingPageProps {
   onRegister: () => void;
 }
 
-type Locale = 'no' | 'es' | 'en';
-
 const copy = {
-  no: {
-    eyebrow: 'Økologisk ultra-premium estate-olje · Biar, Alicante',
-    headline: 'Doña Anna fra hjertet av Alicante.',
-    subhead: 'Tidlig høstet olivenolje og bordoliven fra våre lunder i Biar. Skapt for kjøkken som verdsetter smak, opprinnelse, sporbarhet og en historie gjestene kan kjenne igjen ved bordet.',
-    cta: 'Bestill tasting kit',
-    portal: 'B2B portal',
-    specTitle: 'Tekniske data for innkjøpere',
-    traceTitle: 'Transparencia Total',
-    traceText: 'Hver batch dokumenteres med høstedato, parsell, sort, sensorisk profil og analyseverdier. QR-sporingen gjør opprinnelsen synlig for kokk, innkjøper og gjest.',
-  },
-  es: {
-    eyebrow: 'Aceite ecológico de alta gama · Biar, Alicante',
-    headline: 'Doña Anna para chefs exigentes.',
-    subhead: 'Aceite ecológico y aceitunas de mesa de Biar. Cosecha temprana, trazabilidad por lote y una historia clara para restaurantes, distribuidores y tiendas gourmet.',
-    cta: 'Solicitar tasting kit',
-    portal: 'Portal B2B',
-    specTitle: 'Datos técnicos para compradores',
-    traceTitle: 'Transparencia Total',
-    traceText: 'Cada botella puede mostrar lote, fecha de cosecha, parcela, variedad, perfil sensorial y análisis desde Olivia OS.',
-  },
-  en: {
-    eyebrow: 'Organic ultra-premium estate oil · Biar, Alicante',
-    headline: 'Doña Anna for uncompromising chefs.',
-    subhead: 'Organic olive oil and table olives from Biar. Early harvested, batch-traceable and built for restaurants, distributors and specialty buyers who need a story worth serving.',
-    cta: 'Order tasting kit',
-    portal: 'B2B portal',
-    specTitle: 'Technical specs for buyers',
-    traceTitle: 'Total Transparency',
-    traceText: 'Every bottle can connect to batch, harvest date, parcel, variety, sensory profile and lab data in Olivia OS.',
-  },
+  eyebrow: 'Tidlig høstet estate-olje · Biar, Alicante',
+  headline: 'Doña Anna fra hjertet av Alicante.',
+  subhead: 'Tidlig høstet olivenolje og bordoliven fra våre lunder i Biar. Skapt for kjøkken som verdsetter smak, opprinnelse, sporbarhet og en historie gjestene kan kjenne igjen ved bordet.',
+  cta: 'Be om smaksprøve',
+  portal: 'B2B portal',
+  specTitle: 'Tekniske data for innkjøpere',
+  traceTitle: 'Sporbarhet gjort konkret',
+  traceText: 'Når en batch er publisert, viser QR-sporingen høstedato, parsell, sort, sensorisk profil og analyseverdier for kokk, innkjøper og gjest.',
 };
 
 const imagePaths = {
@@ -75,8 +50,6 @@ const imagePaths = {
   raizAntiguaCleanFamily: '/donaanna/uploads/raiz-antigua-clean-family.jpg',
   cocinaViva5l: '/donaanna/uploads/cocina-viva-5l-square.jpg',
   cocinaVivaChef: '/donaanna/uploads/cocina-viva-chef-square.jpg',
-  raizAntiguaCandle: '/donaanna/uploads/raiz-antigua-candle-square.jpg',
-  brandWordmarkBlack: '/donaanna/uploads/brand-wordmark-black.jpg',
 };
 
 const portfolio = [
@@ -84,7 +57,7 @@ const portfolio = [
     name: 'Verde Vivo',
     labelName: 'DOÑA ANNA · VERDE VIVO',
     format: '250 ml / 500 ml · Cosecha Temprana I',
-    role: 'Intens finishing oil',
+    role: 'Intens finisholje',
     photo: imagePaths.verdeVivoHero,
     text: 'Vår mest intense tidlig-høstede olje. Grønn fruktighet, tydelig bitterhet og lang pepperfinish gjør den sterk på grillet fisk, tomat, brød, salater og retter som trenger en frisk avslutning.',
   },
@@ -92,15 +65,15 @@ const portfolio = [
     name: 'Verde Alto',
     labelName: 'DOÑA ANNA · VERDE ALTO',
     format: '500 ml · Cosecha Temprana II',
-    role: 'Balanced finishing oil',
+    role: 'Balansert finisholje',
     photo: imagePaths.verdeAltoFrontBack,
     text: 'Tidlig høstet, men rundere i uttrykket enn Verde Vivo. En premium bord- og kjøkkenolje for restauranter som ønsker grønn karakter uten at oljen dominerer retten.',
   },
   {
     name: 'Raíz Antigua',
     labelName: 'DOÑA ANNA · RAÍZ ANTIGUA',
-    format: '500 ml · old-tree estate selection',
-    role: 'Old-tree selection',
+    format: '500 ml · utvalg fra gamle trær',
+    role: 'Utvalg fra gamle trær',
     photo: imagePaths.raizAntiguaFamily,
     text: 'En begrenset seleksjon fra eldre trær på gården. Dypere, mer moden fruktighet og en roligere eleganse gjør den egnet for menyer, gavepakker og restauranter som vil fortelle historien om lunden.',
   },
@@ -108,15 +81,15 @@ const portfolio = [
     name: 'Monovarietal Collection',
     labelName: 'DOÑA ANNA · MONOVARIETAL COLLECTION',
     format: 'Genovesa · Gordal · Changlot Real · Picual',
-    role: 'Variety tasting',
+    role: 'Sortssmaking',
     photo: imagePaths.daBlackBottle,
     text: 'Små batcher som viser hvordan sort, jord og høstetidspunkt påvirker aroma og struktur. En naturlig smaksreise for sommelierer, kokker og spesialbutikker.',
   },
   {
     name: 'Cocina Viva',
     labelName: 'DOÑA ANNA · COCINA VIVA',
-    format: '2 L / 5 L · chef format',
-    role: 'Chef format',
+    format: '2 L / 5 L · format for profesjonelle kjøkken',
+    role: 'Format for kjøkken',
     photo: imagePaths.cocinaViva5l,
     text: 'Større format for profesjonelle kjøkken som bruker olivenolje hver dag, men fortsatt vil ha kontroll på kvalitet, opprinnelse og batch. Utviklet for service, mise en place og varme retter.',
   },
@@ -124,7 +97,7 @@ const portfolio = [
     name: 'Mesa',
     labelName: 'DOÑA ANNA · MESA',
     format: 'Aceitunas de mesa',
-    role: 'Table olives',
+    role: 'Bordoliven',
     photo: imagePaths.restaurantTablePour,
     text: 'Bordoliven for aperitivo, markeder, barer og restauranter. En mer uformell inngang til Doña Anna, med samme fokus på råvare, tekstur og opprinnelse.',
   },
@@ -141,7 +114,7 @@ const specs = [
 
 const b2bPackages = [
   {
-    title: 'Chef tasting kit',
+    title: 'Smaksprøve for kjøkken',
     audience: 'Restaurant / hotell',
     image: imagePaths.b2bTraceabilityKitchen,
     text: 'Verde Vivo, Verde Alto og Mesa med produktark, batchhistorie og forslag til bruk på brød, tomat, fisk, grønnsaker og service.',
@@ -150,21 +123,21 @@ const b2bPackages = [
     title: 'Restaurant startpakke',
     audience: 'Kjøkken og bordservering',
     image: imagePaths.cocinaVivaChef,
-    text: '500 ml finishing oils til bordet og Cocina Viva i større format for mise en place, varme retter og daglig bruk.',
+    text: '500 ml finisholjer til bordet og Cocina Viva i større format for mise en place, varme retter og daglig bruk.',
   },
   {
-    title: 'Retail launch',
+    title: 'Butikk og import',
     audience: 'Gourmetbutikk / import',
     image: imagePaths.raizAntiguaCleanFamily,
-    text: 'Hylleklar portefølje med produktbilder, norsk/spansk/engelsk tekst, QR-sporbarhet og tydelig premiumfortelling.',
+    text: 'Hylleklar portefølje med produktbilder, produktark, QR-sporbarhet og tydelig informasjon om opprinnelse og bruk.',
   },
 ];
 
 const buyerProof: Array<{ icon: React.ElementType; title: string; text: string }> = [
-  { icon: Building2, title: 'B2B-priser', text: 'Egne vilkår for restaurant, butikk og distributør.' },
+  { icon: Building2, title: 'Priser for faghandel', text: 'Egne vilkår for restaurant, butikk og distributør.' },
   { icon: Package, title: 'Salgbare formater', text: '250 ml, 500 ml, bordoliven og 2 L / 5 L chef-format.' },
   { icon: QrCode, title: 'QR-sporbarhet', text: 'Batchhistorie fra parsell og høsting til flaske.' },
-  { icon: ShieldCheck, title: 'Innkjøpsklar', text: 'Produktark, sensorikk og logistikkdata samlet.' },
+  { icon: ShieldCheck, title: 'Klar for vurdering', text: 'Produktark, sensorikk og logistikkdata samlet.' },
 ];
 
 const estateMoments = [
@@ -226,43 +199,20 @@ const qualitySteps = [
   ['04', 'Sensorisk kontroll', 'Fruktighet, bitterhet, skarphet og balanse vurderes før batchen får sin rolle i porteføljen.'],
 ];
 
-const visualDirections = [
-  {
-    title: 'Finishing ved bordet',
-    image: imagePaths.restaurantTablePour,
-    text: 'Verde Vivo og Verde Alto møter gjesten på bordet: brød, tomat, fisk, grønnsaker og en tydelig grønn finish rett før servering.',
-  },
-  {
-    title: 'Restaurantkjøkken',
-    image: imagePaths.heroChefWide,
-    text: 'Cocina Viva er utviklet for arbeidstempoet i et profesjonelt kjøkken, med større format og samme sporbare kvalitet som flaskene ved bordet.',
-  },
-  {
-    title: 'Gammel rot og ild',
-    image: imagePaths.raizAntiguaCandle,
-    text: 'Raíz Antigua bærer gårdens mest emosjonelle uttrykk: gamle trær, varme rom, røyk, treverk og en olje som fortjener langsom servering.',
-  },
-  {
-    title: 'Hele kolleksjonen',
-    image: imagePaths.raizAntiguaCleanFamily,
-    text: 'Kolleksjonen samler olje og bordoliven i et visuelt språk av mørkt glass, kremfarget etikett, figurmerket og Doña Annas rolige signatur.',
-  },
-];
-
 const videoStories = [
   {
-    title: 'Michelin-kjøkkenet',
+    title: 'På kjøkkenet',
     eyebrow: 'I bruk',
     src: '/donaanna/video/michelin-chef-uses-dona-anna.mp4',
     poster: imagePaths.b2bTraceabilityKitchen,
-    text: 'Doña Anna er laget for kjøkken som arbeider presist. Filmen viser oljen i bruk, der aroma, varme og timing avgjør hvordan retten avsluttes.',
+    text: 'Doña Anna er laget for kjøkken som arbeider presist. Se hvordan aroma, varme og timing avgjør hvordan retten avsluttes.',
   },
   {
-    title: 'Flasken klar',
+    title: 'Ved bordet',
     eyebrow: 'Produktfilm',
     src: '/donaanna/video/video-av-flasken-klar.mp4',
     poster: imagePaths.daBlackBottle,
-    text: 'En rolig produktfilm som viser flaske, materiale og uttrykk. Den bygger forventning før første dråpe treffer tallerkenen.',
+    text: 'Se hvordan en siste dråpe tilfører grønn fruktighet, bitterhet og pepperfinish rett før servering.',
   },
 ];
 
@@ -270,8 +220,8 @@ const formatNumber = (value: number) => new Intl.NumberFormat('no-NO').format(va
 
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegister }) => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [locale, setLocale] = useState<Locale>('no');
   const [livePortfolio, setLivePortfolio] = useState<PublicCommerceProduct[]>([]);
+  const [tastingRequest, setTastingRequest] = useState({ company: '', role: '', email: '', address: '' });
   const [signal, setSignal] = useState<PublicEstateSignal>({
     isLive: false,
     parcelCount: 2,
@@ -281,8 +231,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     nextTask: 'Sensorisk evaluering og batch-dokumentasjon',
     heroMetric: 'Biar, Alicante',
   });
-  const t = copy[locale];
-
   useEffect(() => {
     fetchPublicEstateSignal().then(setSignal);
     fetchPublicCommerceProducts().then(setLivePortfolio);
@@ -290,16 +238,28 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
   const portfolioItems = livePortfolio.length ? livePortfolio : portfolio;
 
+  const handleTastingRequest = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const subject = 'Forespørsel om smaksprøve – Doña Anna';
+    const body = [
+      `Restaurant / virksomhet: ${tastingRequest.company}`,
+      `Rolle: ${tastingRequest.role}`,
+      `E-post: ${tastingRequest.email}`,
+      `Leveringsadresse: ${tastingRequest.address}`,
+    ].join('\n');
+
+    window.location.href = `mailto:info@donaanna.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
   const navLinks = [
-    ['Estate', '#estate'],
-    ['Design', '#design'],
-    ['Portfolio', '#portfolio'],
-    ['Knowledge', '#knowledge'],
+    ['Gården', '#estate'],
+    ['Produkter', '#portfolio'],
+    ['Kunnskap', '#knowledge'],
     ['Magasin', '/magasin'],
-    ['Traceability', '#traceability'],
-    ['B2B', '#b2b'],
-    ['Specs', '#specs'],
-    ['Tasting kit', '#tasting'],
+    ['Sporbarhet', '#traceability'],
+    ['For profesjonelle', '#b2b'],
+    ['Produktdata', '#specs'],
+    ['Smaksprøve', '#tasting'],
   ];
 
   return (
@@ -321,17 +281,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             ))}
           </div>
           <div className="hidden items-center gap-2 lg:flex">
-            <button
-              onClick={() => setLocale(locale === 'no' ? 'es' : locale === 'es' ? 'en' : 'no')}
-              className="inline-flex h-10 items-center gap-2 border border-white/12 px-3 text-xs uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/8"
-            >
-              <Languages size={15} /> {locale.toUpperCase()}
-            </button>
             <button data-testid="olivia-os-nav" onClick={onAdminLogin} className="inline-flex h-10 items-center gap-2 border border-white/12 px-3 text-xs uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/8">
               <LockKeyhole size={15} /> Olivia OS
             </button>
             <button data-testid="b2b-portal-nav" onClick={onLogin} className="inline-flex h-10 items-center gap-2 bg-white px-4 text-xs font-bold uppercase tracking-[0.18em] text-black transition hover:bg-[#d4af37]">
-              {t.portal}
+              {copy.portal}
             </button>
           </div>
           <button className="lg:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label="Meny">
@@ -347,7 +301,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             ))}
             <div className="mt-3 grid gap-2">
               <button data-testid="b2b-portal-mobile-menu" onClick={() => { setMenuOpen(false); onLogin(); }} className="w-full bg-white px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-black">
-                {t.portal}
+                {copy.portal}
               </button>
               <button data-testid="olivia-os-mobile-menu" onClick={() => { setMenuOpen(false); onAdminLogin(); }} className="w-full border border-white/12 px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-white/72">
                 Olivia OS
@@ -365,12 +319,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_42%,rgba(212,175,55,.16),transparent_34%),linear-gradient(90deg,rgba(13,13,13,.98),rgba(13,13,13,.78),rgba(13,13,13,.42))]" />
         <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col justify-end px-5 pb-12 pt-28 md:px-8">
           <div className="max-w-4xl animate-in fade-in duration-700">
-            <p className="mb-5 text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">{t.eyebrow}</p>
-            <h1 className="font-serif text-5xl leading-[0.95] tracking-normal md:text-7xl">{t.headline}</h1>
-            <p className="mt-7 max-w-2xl text-lg leading-8 text-white/72 md:text-xl">{t.subhead}</p>
+            <p className="mb-5 text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">{copy.eyebrow}</p>
+            <h1 className="font-serif text-5xl leading-[0.95] tracking-normal md:text-7xl">{copy.headline}</h1>
+            <p className="mt-7 max-w-2xl text-lg leading-8 text-white/72 md:text-xl">{copy.subhead}</p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
-                {t.cta} <ArrowRight size={17} />
+                {copy.cta} <ArrowRight size={17} />
               </a>
               <a href="#portfolio" className="inline-flex h-12 items-center justify-center gap-2 border border-white/18 px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-white/8">
                 Se kolleksjonen
@@ -385,7 +339,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               ['Estate', signal.heroMetric],
               ['Parseller', formatNumber(signal.parcelCount)],
               ['Trær', formatNumber(signal.treeCount)],
-              ['Sporbarhet', signal.isLive ? `${signal.activeBatches} aktive batcher` : 'Batchklar'],
+              ['Sporbarhet', signal.isLive ? `${signal.activeBatches} aktive batcher` : 'Publiseres ved lansering'],
             ].map(([label, value]) => (
               <div key={label} className="border-white/12 p-4 odd:border-r md:border-r md:last:border-r-0">
                 <p className="text-[10px] uppercase tracking-[0.24em] text-[#d4af37]">{label}</p>
@@ -412,7 +366,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 </p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                   <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
-                    Bestill tasting kit <ArrowRight size={17} />
+                    {copy.cta} <ArrowRight size={17} />
                   </a>
                   <a href="#traceability" className="inline-flex h-12 items-center justify-center gap-2 border border-white/18 px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-white/8">
                     Se sporbarhet
@@ -432,68 +386,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
         </section>
 
-        <section id="design" className="border-y border-white/10 bg-[#080808] px-5 py-20 md:px-8">
-          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.12fr_0.88fr] lg:items-center">
-            <div className="overflow-hidden border border-[#d4af37]/24 bg-black">
-              <img src={imagePaths.brandWordmarkBlack} alt="Doña Anna merkevare med Biar og Alicante" className="aspect-[16/9] w-full object-cover" />
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Merkevaren</p>
-              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Mørk skifer, lyst tre og dempet middelhavslys.</h2>
-              <p className="mt-6 text-lg leading-8 text-white/66">
-                Doña Anna uttrykker middelhavets varme med et rolig, moderne luksusspråk: mørkt glass, kremfarget etikett, gulltoner og mye luft. Resultatet er en flaske som passer like godt på et hvitt restaurantbord som i et travelt kjøkken.
-              </p>
-              <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                {[
-                  ['Verde Vivo', '500 ml finishing'],
-                  ['Mesa', 'Bordoliven'],
-                  ['Cocina Viva', '2 L / 5 L chef'],
-                ].map(([title, text]) => (
-                  <div key={title} className="border border-white/10 bg-white/[0.035] p-4">
-                    <p className="font-serif text-xl">{title}</p>
-                    <p className="mt-2 text-xs uppercase tracking-[0.18em] text-[#d4af37]">{text}</p>
-                  </div>
-                ))}
-              </div>
-              <a href="#portfolio" className="mt-8 inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
-                Se porteføljen <ArrowRight size={17} />
-              </a>
-            </div>
-          </div>
-          <div className="mx-auto mt-10 grid max-w-7xl gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {visualDirections.map(item => (
-              <article key={item.title} className="group overflow-hidden border border-white/10 bg-white/[0.035]">
-                <div className="h-56 overflow-hidden bg-black">
-                  <img src={item.image} alt={item.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
-                </div>
-                <div className="p-5">
-                  <p className="font-serif text-2xl">{item.title}</p>
-                  <p className="mt-3 text-sm leading-6 text-white/62">{item.text}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-          <div className="mx-auto mt-10 grid max-w-7xl gap-6 border border-white/10 bg-black/34 p-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-            <img src={imagePaths.raizAntiguaCleanFamily} alt="Doña Anna produktfamilie" className="aspect-video w-full object-cover" />
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Doña Anna</p>
-              <h3 className="mt-3 font-serif text-3xl md:text-4xl">En samlet visuell identitet.</h3>
-              <p className="mt-4 leading-7 text-white/62">
-                Figurmerket, navnet, Biar/Alicante og produktfamilien danner én tydelig flate. Det gir gjenkjennelse på nettside, video, smaksprøver, presentasjoner og emballasje.
-              </p>
-            </div>
-          </div>
-        </section>
-
         <section className="bg-[#111111] px-5 py-24 md:px-8">
           <div className="mx-auto max-w-7xl">
             <div className="mb-10 grid gap-8 md:grid-cols-[0.85fr_1.15fr]">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">I bruk</p>
-                <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Video som selger produktet før smaking.</h2>
+                <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Se oljen i arbeid.</h2>
               </div>
               <p className="self-end text-lg leading-8 text-white/66">
-                En god olje må sees i arbeid. Filmene viser Doña Anna i to situasjoner som betyr mest for kjøpere: flaskens premiumfølelse og kokkens praktiske bruk i et profesjonelt kjøkken.
+                Fra siste finish ved bordet til daglig service på kjøkkenet: se hvordan Doña Anna brukes når smak, temperatur og timing teller.
               </p>
             </div>
             <div className="grid gap-5 lg:grid-cols-2">
@@ -517,10 +418,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="mb-12 grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Portefølje</p>
-              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Olje og bordoliven bygget som en kolleksjon.</h2>
+              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Olje og bordoliven for bordet, kjøkkenet og hyllen.</h2>
             </div>
             <p className="self-end text-lg leading-8 text-white/66">
-              Verde Vivo og Verde Alto er 500 ml finishing oils for bord og kjøkken. Cocina Viva gir kokker større format i mørk metallkanne eller bag-in-box. Mesa gjør Doña Anna synlig i spanske markeder, restauranter og aperitivo-servering.
+              Verde Vivo og Verde Alto er 500 ml finisholjer for bord og kjøkken. Cocina Viva gir kokker større format til daglig service. Mesa gir restauranter, barer og spesialbutikker en bordoliven med tydelig opprinnelse.
             </p>
           </div>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -528,7 +429,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <article key={item.name} className="group border border-white/10 bg-white/[0.035] p-4 transition hover:border-[#d4af37]/50">
                 <div className="grid gap-3">
                   <div className="h-72 overflow-hidden bg-[#080808]">
-                    <img src={item.photo} alt={`${item.name} designfoto`} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                    <img src={item.photo} alt={`${item.name} produktbilde`} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
                   </div>
                 </div>
                 <div className="p-2 pt-5">
@@ -636,15 +537,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
         <section id="traceability" className="border-y border-white/10 bg-[#111111] py-24">
           <div className="mx-auto grid max-w-7xl gap-10 px-5 md:grid-cols-[0.95fr_1.05fr] md:px-8">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">{t.traceTitle}</p>
-              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Fra jord til bord, dokumentert på flasken.</h2>
-              <p className="mt-6 text-lg leading-8 text-white/66">{t.traceText}</p>
+              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">{copy.traceTitle}</p>
+              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Se hva som ligger bak flasken.</h2>
+              <p className="mt-6 text-lg leading-8 text-white/66">{copy.traceText}</p>
               <div className="mt-8 grid gap-3 sm:grid-cols-2">
                 {[
-                  [ScanLine, 'QR batch page'],
-                  [ShieldCheck, 'Lab certificate'],
-                  [BadgeCheck, 'Harvest window'],
-                  [Building2, 'Chef-ready story'],
+                  [ScanLine, 'Batchinformasjon'],
+                  [ShieldCheck, 'Analyseverdier'],
+                  [BadgeCheck, 'Høstevindu'],
+                  [Building2, 'Opprinnelse for gjesten'],
                 ].map(([Icon, label]) => (
                   <div key={label as string} className="flex items-center gap-3 border border-white/10 bg-black/24 p-4">
                     <Icon size={20} className="text-[#d4af37]" />
@@ -665,10 +566,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 {[
                   ['Parsell', signal.heroMetric],
                   ['Høsting', signal.latestHarvestDate || 'Oktober-november'],
-                  ['Sort', 'Changlot Real / estate blend'],
-                  ['Polyfenoler', 'Analyseres per premiumbatch'],
+                  ['Sort', 'Changlot Real / gårdsblanding'],
+                  ['Polyfenoler', 'Oppgis med batchanalyse'],
                   ['Ekstraksjon', 'Mekanisk · under 27°C'],
-                  ['Dokumentasjon', signal.isLive ? 'Aktiv batch' : 'Klar for QR'],
+                  ['Dokumentasjon', signal.isLive ? 'Aktiv batch' : 'Publiseres ved lansering'],
                 ].map(([label, value]) => (
                   <div key={label} className="border border-white/10 bg-white/[0.04] p-4">
                     <p className="text-[10px] uppercase tracking-[0.24em] text-[#d4af37]">{label}</p>
@@ -691,7 +592,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <p className="mt-2 max-w-2xl text-white/62">Vi kan sette sammen en liten B2B-smakspakke med Verde Vivo, Verde Alto og Mesa-bordoliven.</p>
             </div>
             <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
-              Bestill tasting kit <ArrowRight size={17} />
+              {copy.cta} <ArrowRight size={17} />
             </a>
           </div>
         </section>
@@ -701,15 +602,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             <div className="mb-12 grid gap-8 md:grid-cols-[0.78fr_1.22fr]">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#8a6a19]">B2B</p>
-                <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">En premium olje må være enkel å kjøpe inn.</h2>
+                <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Et godt produkt må være enkelt å kjøpe inn.</h2>
               </div>
               <div className="self-end">
                 <p className="text-lg leading-8 text-black/66">
-                  Doña Anna presenteres som et ferdig kommersielt oppsett for kjøkken, butikk og import: tydelige pakker, produktark, batchsporbarhet, formatvalg og en første smaking som gjør beslutningen konkret.
+                  For kjøkken, butikk og import samler Doña Anna produktark, formatvalg, sporbarhet og en smaksprøve som gjør vurderingen konkret.
                 </p>
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                   <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-black px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-[#8a6a19]">
-                    Start med tasting kit <ArrowRight size={17} />
+                    {copy.cta} <ArrowRight size={17} />
                   </a>
                   <button data-testid="b2b-portal-section" onClick={onLogin} className="inline-flex h-12 items-center justify-center gap-2 border border-black/15 px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
                     B2B portal <LockKeyhole size={16} />
@@ -749,7 +650,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="grid gap-10 md:grid-cols-[0.8fr_1.2fr]">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Produktdata</p>
-              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">{t.specTitle}</h2>
+              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">{copy.specTitle}</h2>
               <p className="mt-6 text-lg leading-8 text-white/60">
                 Profesjonelle kjøpere trenger tydelige fakta. Doña Anna samler smaksnotater, format, høstedato, sort, batchnummer og analyseverdier slik at produktet er enkelt å vurdere, prise og servere.
               </p>
@@ -769,9 +670,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[1fr_0.9fr]">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#8a6a19]">Smaksprøve</p>
-              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Bestill en eksklusiv smaksprøve for din restaurant.</h2>
+              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Be om en smaksprøve for restauranten.</h2>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-black/66">
-                Tasting kit gir kjøkkensjefer og innkjøpere en konkret første opplevelse av Doña Anna: tidlig-høstet olje, bordoliven, smaksnotater, formatinformasjon og batchsporbarhet.
+                Smaksprøven gir kjøkkensjefer og innkjøpere en konkret introduksjon til Doña Anna: tidlig høstet olje, bordoliven, smaksnotater og informasjon om formater og batcher.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a href="mailto:info@donaanna.com?subject=Produktark%20Do%C3%B1a%20Anna" className="inline-flex items-center gap-2 border border-black/15 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em]">
@@ -782,17 +683,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 </button>
               </div>
             </div>
-            <form className="border border-black/12 bg-white p-5 shadow-2xl shadow-black/10" onSubmit={(event) => event.preventDefault()}>
-              <label className="block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Restaurant / Company</label>
-              <input className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
-              <label className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Role</label>
-              <input placeholder="Chef / Buyer / Distributor" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
-              <label className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Email</label>
-              <input type="email" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
-              <label className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Delivery address</label>
-              <textarea className="mt-2 h-24 w-full border border-black/12 p-3 outline-none focus:border-[#d4af37]" />
+            <form className="border border-black/12 bg-white p-5 shadow-2xl shadow-black/10" onSubmit={handleTastingRequest}>
+              <label htmlFor="tasting-company" className="block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Restaurant / virksomhet</label>
+              <input id="tasting-company" required value={tastingRequest.company} onChange={(event) => setTastingRequest({ ...tastingRequest, company: event.target.value })} className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
+              <label htmlFor="tasting-role" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Rolle</label>
+              <input id="tasting-role" required value={tastingRequest.role} onChange={(event) => setTastingRequest({ ...tastingRequest, role: event.target.value })} placeholder="Kokk, innkjøper eller distributør" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
+              <label htmlFor="tasting-email" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">E-post</label>
+              <input id="tasting-email" required value={tastingRequest.email} onChange={(event) => setTastingRequest({ ...tastingRequest, email: event.target.value })} type="email" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
+              <label htmlFor="tasting-address" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Leveringsadresse</label>
+              <textarea id="tasting-address" required value={tastingRequest.address} onChange={(event) => setTastingRequest({ ...tastingRequest, address: event.target.value })} className="mt-2 h-24 w-full border border-black/12 p-3 outline-none focus:border-[#d4af37]" />
+              <p className="mt-4 text-sm leading-6 text-black/60">Forespørselen åpner en e-post til Doña Anna med opplysningene dine. Vi svarer med tilgjengelighet, pris og levering.</p>
               <button className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-black px-5 text-xs font-bold uppercase tracking-[0.2em] text-white">
-                {t.cta} <ArrowRight size={17} />
+                Send forespørsel <ArrowRight size={17} />
               </button>
             </form>
           </div>
