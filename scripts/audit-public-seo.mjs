@@ -24,7 +24,7 @@ const networkDomains = [
 
 if (!/<title>[^<]*Freddy Bremseth[^<]*<\/title>/.test(index)) fail('Homepage title must connect Doña Anna to Freddy Bremseth.');
 if (!index.includes(stablePerson)) fail('Homepage must use the stable Freddy Bremseth Person @id.');
-if (!index.includes('"founder":{"@id":"https://www.freddybremseth.com/#person"}')) fail('Doña Anna entity must identify Freddy Bremseth as founder.');
+if (!/"founder"\s*:\s*\{\s*"@id"\s*:\s*"https:\/\/www\.freddybremseth\.com\/#person"\s*\}/.test(index)) fail('Doña Anna entity must identify Freddy Bremseth as founder.');
 if (!landing.includes('Hva er Doña Anna?')) fail('Homepage must retain the direct-answer AEO section.');
 if (!landing.includes('id="people"')) fail('Homepage must retain the visible Freddy Bremseth section.');
 if (!landing.includes('Freddy Bremseth network')) fail('Homepage must retain visible cross-brand navigation.');
