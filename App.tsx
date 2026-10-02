@@ -21,6 +21,7 @@ const FieldConsultantView = lazy(() => import('./components/FieldConsultantView'
 const PruningAdvisorView = lazy(() => import('./components/PruningAdvisorView'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const IoTDashboard = lazy(() => import('./components/IoTDashboard'));
+const CaecvCertificationView = lazy(() => import('./components/CaecvCertificationView'));
 const CommerceHub = lazy(() => import('./components/CommerceHub'));
 const ProfitabilityPage = lazy(() => import('./pages/Profitability'));
 
@@ -457,6 +458,7 @@ const App: React.FC = () => {
       case 'irrigation': return <IrrigationView />;
       case 'tasks': return <TasksView parcels={parcels} />;
       case 'iot': return <IoTDashboard />;
+      case 'caecv': return <CaecvCertificationView parcels={parcels} />;
       case 'settings': return <SettingsView language={language} onLanguageChange={updateLanguage} />;
       default: return <FarmOverview
         language={language}
