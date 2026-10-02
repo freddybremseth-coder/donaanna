@@ -84,12 +84,31 @@ export default async function handler(
   const canonical = SITE + '/' + destination;
   const schema = {
     '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    '@id': canonical + '#collection',
-    url: canonical,
-    name: config.heading,
-    description: config.description,
-    isPartOf: { '@id': SITE + '/#website' },
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': canonical + '#collection',
+        url: canonical,
+        name: config.heading,
+        description: config.description,
+        isPartOf: { '@id': SITE + '/#website' },
+        creator: { '@id': 'https://www.freddybremseth.com/#person' },
+        publisher: { '@id': SITE + '/#organization' },
+      },
+      {
+        '@type': 'Organization',
+        '@id': SITE + '/#organization',
+        name: 'Doña Anna',
+        url: SITE + '/',
+        founder: { '@id': 'https://www.freddybremseth.com/#person' },
+      },
+      {
+        '@type': 'Person',
+        '@id': 'https://www.freddybremseth.com/#person',
+        name: 'Freddy Bremseth',
+        url: 'https://www.freddybremseth.com/',
+      },
+    ],
   };
   const css = 'body{background:#0d0d0d;color:#f7f1df;margin:0;font-family:Arial,sans-serif;line-height:1.7}' +
     'header{border-bottom:1px solid #39342d;padding:20px 5%}a{color:#d4af37}nav a{margin-right:20px}' +
@@ -97,23 +116,33 @@ export default async function handler(
     'h1,h2{font-family:Georgia,serif;line-height:1.22}h1{font-size:clamp(2.1rem,5vw,4rem)}' +
     '.intro{max-width:750px;color:#d8cab0;font-size:1.2rem}.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:22px;margin-top:42px}' +
     '.card{border:1px solid #39342d;background:#17130d}.card img{width:100%;height:200px;object-fit:cover}.card-body{padding:25px}' +
-    '.card h2{font-size:1.65rem}.card p{color:#dbd2c3}.card .date{color:#d4af37;font-size:.8rem;text-transform:uppercase}';
+    '.card h2{font-size:1.65rem}.card p{color:#dbd2c3}.card .date{color:#d4af37;font-size:.8rem;text-transform:uppercase}' +
+    '.byline{margin-top:14px;color:#a99980;font-size:.92rem}.byline a{color:#d4af37}.network{border-top:1px solid #39342d;padding:28px 5%;color:#8f8372;font-size:.82rem}' +
+    '.network strong{display:block;color:#d4af37;margin-bottom:10px;letter-spacing:.12em;text-transform:uppercase}.network a{margin-right:16px;white-space:nowrap}';
   const html = '<!doctype html><html lang="no"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
-    '<title>' + escapeHtml(config.heading) + ' | Doña Anna</title>' +
+    '<title>' + escapeHtml(config.heading) + ' | Doña Anna · Freddy Bremseth</title>' +
     '<meta name="description" content="' + escapeHtml(config.description) + '">' +
     '<link rel="canonical" href="' + canonical + '">' +
     '<meta property="og:type" content="website">' +
     '<meta property="og:url" content="' + canonical + '">' +
-    '<meta property="og:title" content="' + escapeHtml(config.heading) + ' | Doña Anna">' +
+    '<meta property="og:title" content="' + escapeHtml(config.heading) + ' | Doña Anna · Freddy Bremseth">' +
     '<script type="application/ld+json">' + JSON.stringify(schema).replace(/</g, '\\u003c') + '</script>' +
     '<style>' + css + '</style></head><body>' +
     '<header><nav><a href="/">DOÑA ANNA</a><a href="/magasin">Magasin</a>' +
     '<a href="/artikler">Artikler</a><a href="/blogg">Blogg</a><a href="/oppskrifter">Oppskrifter</a></nav></header>' +
     '<main><h1>' + escapeHtml(config.heading) + '</h1><p class="intro">' + escapeHtml(config.description) + '</p>' +
+    '<p class="byline">Redaksjonelt innhold fra Doña Anna · <a href="https://www.freddybremseth.com/olivenolje-og-dona-anna.html">Freddy Bremseth</a></p>' +
     (cards ? '<section class="cards" aria-label="' + escapeHtml(config.label) + '">' + cards + '</section>'
       : '<p>Her finner du publiserte saker når de er klare.</p>') +
-    '</main></body></html>';
+    '</main><footer class="network"><strong>Freddy Bremseth network</strong>' +
+    '<a href="https://www.freddybremseth.com/">FreddyBremseth.com</a>' +
+    '<a href="https://www.zenecohomes.com/">Zen Eco Homes</a>' +
+    '<a href="https://www.pinosoecolife.com/">Pinoso Eco Life</a>' +
+    '<a href="https://www.chatgenius.pro/">ChatGenius</a>' +
+    '<a href="https://books.freddybremseth.com/">Books</a>' +
+    '<a href="https://art.freddybremseth.com/">Art</a>' +
+    '<a href="https://remaster.freddybremseth.com/">Re-Master Freddy</a></footer></body></html>';
 
   res.writeHead(200, {
     'Content-Type': 'text/html; charset=utf-8',
