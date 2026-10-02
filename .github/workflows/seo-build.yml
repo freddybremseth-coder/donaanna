@@ -22,10 +22,10 @@ jobs:
         run: npm run build
       - name: Compile SEO serverless handlers
         run: |
-          npx esbuild api/public-article.ts api/public-listing.ts api/sitemap.ts api/realtyflow/publish.ts \
+          npx esbuild api/public-article.ts api/public-listing.ts api/public-evergreen.ts api/sitemap.ts api/realtyflow/publish.ts \
             --outdir=/tmp/donaanna-api-check \
             --bundle --platform=node --format=esm --external:@supabase/supabase-js
       - name: Validate public SEO, AEO, GEO and entity network
         run: node scripts/audit-public-seo.mjs
       - name: Validate deployment routing configuration
-        run: node -e "const c=require('./vercel.json'); if(!c.rewrites?.some(r=>r.source==='/sitemap.xml') || !c.rewrites?.some(r=>r.source==='/magasin/:slug') || !c.rewrites?.some(r=>r.source==='/magasin')) process.exit(1)"
+        run: node -e "const c=require('./vercel.json'); const must=['/sitemap.xml','/magasin/:slug','/magasin','/olivenolje-fra-biar','/tidlig-hostet-olivenolje','/olivenolje-for-restauranter','/bordoliven-fra-biar']; if(must.some(source=>!c.rewrites?.some(r=>r.source===source))) process.exit(1)"
