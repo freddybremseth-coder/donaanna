@@ -31,7 +31,17 @@ function getSupabase() {
 }
 
 export default async function handler(_req: IncomingMessage, res: ServerResponse) {
-  const staticPaths = ['/', '/magasin', '/artikler', '/blogg', '/oppskrifter'];
+  const staticPaths = [
+    '/',
+    '/olivenolje-fra-biar',
+    '/tidlig-hostet-olivenolje',
+    '/olivenolje-for-restauranter',
+    '/bordoliven-fra-biar',
+    '/magasin',
+    '/artikler',
+    '/blogg',
+    '/oppskrifter',
+  ];
   const rows: Array<{ destination_id?: string; destination_path?: string; slug?: string; published_at?: string; updated_at?: string; created_at?: string }> = [];
 
   const supabase = getSupabase();

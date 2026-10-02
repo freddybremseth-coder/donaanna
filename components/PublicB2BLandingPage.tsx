@@ -256,11 +256,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     ['Produkter', '#portfolio'],
     ['Kunnskap', '#knowledge'],
     ['Magasin', '/magasin'],
-    ['Sporbarhet', '#traceability'],
     ['For profesjonelle', '#b2b'],
-    ['Produktdata', '#specs'],
-    ['Smaksprøve', '#tasting'],
-    ['Om Freddy', '#people'],
+    ['Om prosjektet', '#people'],
   ];
 
   return (
@@ -282,9 +279,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             ))}
           </div>
           <div className="hidden items-center gap-2 lg:flex">
-            <button data-testid="olivia-os-nav" onClick={onAdminLogin} className="inline-flex h-10 items-center gap-2 border border-white/12 px-3 text-xs uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/8">
-              <LockKeyhole size={15} /> Olivia OS
-            </button>
+            <a href="#tasting" className="inline-flex h-10 items-center gap-2 border border-[#d4af37]/55 px-4 text-xs font-bold uppercase tracking-[0.18em] text-[#f7f1df] transition hover:bg-[#d4af37] hover:text-black">
+              Be om smaksprøve
+            </a>
             <button data-testid="b2b-portal-nav" onClick={onLogin} className="inline-flex h-10 items-center gap-2 bg-white px-4 text-xs font-bold uppercase tracking-[0.18em] text-black transition hover:bg-[#d4af37]">
               {copy.portal}
             </button>
@@ -301,11 +298,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               </a>
             ))}
             <div className="mt-3 grid gap-2">
-              <button data-testid="b2b-portal-mobile-menu" onClick={() => { setMenuOpen(false); onLogin(); }} className="w-full bg-white px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-black">
+              <a href="#tasting" onClick={() => setMenuOpen(false)} className="w-full bg-[#d4af37] px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-black">
+                Be om smaksprøve
+              </a>
+              <button data-testid="b2b-portal-mobile-menu" onClick={() => { setMenuOpen(false); onLogin(); }} className="w-full border border-white/12 px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-white/72">
                 {copy.portal}
-              </button>
-              <button data-testid="olivia-os-mobile-menu" onClick={() => { setMenuOpen(false); onAdminLogin(); }} className="w-full border border-white/12 px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-white/72">
-                Olivia OS
               </button>
             </div>
           </div>
@@ -330,9 +327,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <a href="#portfolio" className="inline-flex h-12 items-center justify-center gap-2 border border-white/18 px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-white/8">
                 Se kolleksjonen
               </a>
-              <button data-testid="b2b-portal-hero" onClick={onLogin} className="inline-flex h-12 items-center justify-center gap-2 border border-[#d4af37]/60 px-6 text-xs font-bold uppercase tracking-[0.2em] text-[#f7f1df] transition hover:bg-[#d4af37] hover:text-black">
-                Åpne B2B portal <LockKeyhole size={16} />
-              </button>
+              <a href="#b2b" className="inline-flex h-12 items-center justify-center gap-2 border border-[#d4af37]/60 px-6 text-xs font-bold uppercase tracking-[0.2em] text-[#f7f1df] transition hover:bg-[#d4af37] hover:text-black">
+                For restaurant og faghandel <Building2 size={16} />
+              </a>
             </div>
           </div>
           <div className="mt-12 grid max-w-5xl grid-cols-2 border border-white/12 bg-black/22 backdrop-blur md:grid-cols-4">
@@ -362,7 +359,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   Doña Anna er et olivenprosjekt i Biar, Alicante, utviklet av Freddy Bremseth. Fokus er tidlig høstet extra virgin olivenolje, bordoliven, sporbarhet og produkter for både matinteresserte og profesjonelle kjøkken.
                 </p>
               </div>
-              <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <article className="border border-white/10 bg-white/[0.035] p-5">
                   <h3 className="font-serif text-2xl">Hvor kommer olivenoljen fra?</h3>
                   <p className="mt-3 leading-7 text-white/62">Fra Doña Annas olivenlunder i Biar i Alicante, med dokumentasjon av sort, høstevindu og batch når produksjonen publiseres.</p>
@@ -372,11 +369,53 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   <p className="mt-3 leading-7 text-white/62">Tidlig høsting, mekanisk kald ekstraksjon og et uttrykk bygget rundt grønn fruktighet, bitterhet, pepperfinish og tydelig opprinnelse.</p>
                 </article>
                 <article className="border border-white/10 bg-white/[0.035] p-5">
+                  <h3 className="font-serif text-2xl">Kan restauranter få smaksprøve?</h3>
+                  <p className="mt-3 leading-7 text-white/62">Ja. Restauranter, hoteller, butikker og distributører kan sende en forespørsel om smaksprøve, produktark, format, pris og levering.</p>
+                </article>
+                <article className="border border-white/10 bg-white/[0.035] p-5">
                   <h3 className="font-serif text-2xl">Hvem står bak?</h3>
                   <p className="mt-3 leading-7 text-white/62">Freddy Bremseth utvikler Doña Anna som del av sin prosjektportefølje i Spania. <a className="text-[#d4af37] underline-offset-4 hover:underline" href="https://www.freddybremseth.com/olivenolje-og-dona-anna.html">Les historien bak prosjektet</a>.</p>
                 </article>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section id="customer-path" className="border-b border-white/10 bg-[#f8f5ea] px-5 py-20 text-black md:px-8">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr]">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#8a6a19]">Finn riktig inngang</p>
+                <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Hva vil du bruke Doña Anna til?</h2>
+                <p className="mt-5 max-w-xl text-lg leading-8 text-black/64">Start med behovet ditt. Derfra kan du gå direkte til riktig produktinformasjon, kunnskap eller kontaktpunkt.</p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <a href="#tasting" className="group border border-black/10 bg-white p-6 transition hover:-translate-y-1 hover:border-[#8a6a19]/55">
+                  <Building2 size={24} className="text-[#8a6a19]" />
+                  <h3 className="mt-8 font-serif text-3xl">Restaurant eller hotell</h3>
+                  <p className="mt-3 leading-7 text-black/62">Smaksprøve, produktark, 500 ml finisholje og større kjøkkenformat.</p>
+                  <span className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[#8a6a19]">Be om smaksprøve <ArrowRight size={15} /></span>
+                </a>
+                <a href="#b2b" className="group border border-black/10 bg-white p-6 transition hover:-translate-y-1 hover:border-[#8a6a19]/55">
+                  <Package size={24} className="text-[#8a6a19]" />
+                  <h3 className="mt-8 font-serif text-3xl">Butikk eller import</h3>
+                  <p className="mt-3 leading-7 text-black/62">Portefølje, formater, sporbarhet og dokumentasjon for faghandel.</p>
+                  <span className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[#8a6a19]">Se B2B-løsningen <ArrowRight size={15} /></span>
+                </a>
+                <a href="/tidlig-hostet-olivenolje" className="group border border-black/10 bg-white p-6 transition hover:-translate-y-1 hover:border-[#8a6a19]/55">
+                  <Leaf size={24} className="text-[#8a6a19]" />
+                  <h3 className="mt-8 font-serif text-3xl">Matinteressert</h3>
+                  <p className="mt-3 leading-7 text-black/62">Forstå tidlig høsting, smak, polyfenoler, sorter og opprinnelsen i Biar.</p>
+                  <span className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[#8a6a19]">Lær om oljen <ArrowRight size={15} /></span>
+                </a>
+              </div>
+            </div>
+            <nav className="mt-8 flex flex-wrap gap-x-6 gap-y-3 border-t border-black/10 pt-6 text-sm" aria-label="Doña Anna guider">
+              <a className="font-semibold text-[#705515] underline-offset-4 hover:underline" href="/olivenolje-fra-biar">Olivenolje fra Biar</a>
+              <a className="font-semibold text-[#705515] underline-offset-4 hover:underline" href="/tidlig-hostet-olivenolje">Tidlig høstet olivenolje</a>
+              <a className="font-semibold text-[#705515] underline-offset-4 hover:underline" href="/olivenolje-for-restauranter">Olivenolje for restauranter</a>
+              <a className="font-semibold text-[#705515] underline-offset-4 hover:underline" href="/bordoliven-fra-biar">Bordoliven fra Biar</a>
+            </nav>
           </div>
         </section>
 
@@ -757,10 +796,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
           <div className="space-y-3">
             <div className="flex flex-wrap gap-4 text-xs uppercase tracking-[0.18em] text-white/54">
+              <a href="/magasin">Magasin</a>
+              <a href="/artikler">Artikler</a>
+              <a href="/oppskrifter">Oppskrifter</a>
               <button data-testid="b2b-portal-footer" onClick={onLogin}>B2B Portal</button>
               <button data-testid="olivia-os-footer" onClick={onAdminLogin}>Olivia OS</button>
               <a href="mailto:info@donaanna.com">info@donaanna.com</a>
               <a href="https://www.freddybremseth.com/olivenolje-og-dona-anna.html">Freddy Bremseth · Doña Anna</a>
+              <span>Oppdatert 2. oktober 2026</span>
             </div>
             <nav aria-label="Freddy Bremseth prosjektnettverk" className="flex flex-wrap gap-x-4 gap-y-2 text-[10px] uppercase tracking-[0.16em] text-white/38">
               <span className="text-[#d4af37]">Freddy Bremseth network</span>
@@ -777,12 +820,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
       </footer>
 
       <div className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-2 gap-2 border-t border-white/10 bg-[#0d0d0d]/94 p-3 backdrop-blur-xl lg:hidden">
-        <button data-testid="b2b-portal-mobile-dock" onClick={onLogin} className="inline-flex h-12 items-center justify-center gap-2 bg-white text-xs font-bold uppercase tracking-[0.16em] text-black">
-          <Building2 size={16} /> B2B portal
-        </button>
-        <button data-testid="olivia-os-mobile-dock" onClick={onAdminLogin} className="inline-flex h-12 items-center justify-center gap-2 border border-white/14 text-xs font-bold uppercase tracking-[0.16em] text-white/78">
-          <LockKeyhole size={16} /> Olivia OS
-        </button>
+        <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] text-xs font-bold uppercase tracking-[0.16em] text-black">
+          <Building2 size={16} /> Smaksprøve
+        </a>
+        <a href="#portfolio" className="inline-flex h-12 items-center justify-center gap-2 border border-white/14 text-xs font-bold uppercase tracking-[0.16em] text-white/78">
+          <Package size={16} /> Produkter
+        </a>
       </div>
     </div>
   );

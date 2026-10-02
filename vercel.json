@@ -69,6 +69,22 @@
       "destination": "/api/catastro?path=:path*"
     },
     {
+      "source": "/olivenolje-fra-biar",
+      "destination": "/api/public-evergreen?page=olivenolje-fra-biar"
+    },
+    {
+      "source": "/tidlig-hostet-olivenolje",
+      "destination": "/api/public-evergreen?page=tidlig-hostet-olivenolje"
+    },
+    {
+      "source": "/olivenolje-for-restauranter",
+      "destination": "/api/public-evergreen?page=olivenolje-for-restauranter"
+    },
+    {
+      "source": "/bordoliven-fra-biar",
+      "destination": "/api/public-evergreen?page=bordoliven-fra-biar"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
