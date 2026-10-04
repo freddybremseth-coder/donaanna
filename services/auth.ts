@@ -23,8 +23,8 @@ function withTimeout<T>(promise: Promise<T>, ms = 15000, label = 'Forespørselen
   return new Promise<T>((resolve, reject) => {
     const t = setTimeout(() => {
       reject(new Error(
-        `${label} tok for lang tid. Sjekk internett-tilkoblingen, eller at ` +
-        `Supabase-prosjektet er aktivt (gratis-prosjekter pauses etter 7 dager uten bruk).`
+        `${label} tok for lang tid. Supabase svarer ikke akkurat nå. ` +
+        `Prøv igjen om litt; dette betyr ikke at data eller innstillinger er borte.`
       ));
     }, ms);
     promise.then(
@@ -332,7 +332,7 @@ function translateAuthError(message: string): string {
   if (m.includes('user not found')) return 'Ingen konto funnet for denne e-posten.';
   // Network / connectivity failures (these used to silently hang the UI)
   if (m.includes('failed to fetch') || m.includes('networkerror') || m.includes('network request failed')) {
-    return 'Kunne ikke nå serveren. Sjekk internett, eller at Supabase-prosjektet er aktivt (gratis-prosjekter pauses etter 7 dager uten bruk).';
+    return 'Supabase er midlertidig utilgjengelig. Prøv igjen om litt. Dataene dine er ikke slettet, og du trenger normalt ikke endre miljøvariabler.';
   }
   if (m.includes('err_name_not_resolved') || m.includes('dns')) {
     return 'Supabase-URL-en finnes ikke (DNS-feil). Kontakt administrator — VITE_SUPABASE_URL må oppdateres.';
