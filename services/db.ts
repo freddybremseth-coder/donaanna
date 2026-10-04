@@ -65,7 +65,14 @@ export async function fetchParcels(): Promise<Parcel[]> {
     .from('parcels')
     .select('*')
     .order('created_at', { ascending: true });
-  if (error) { console.error('fetchParcels', error); return []; }
+  if (error) {
+    console.error('fetchParcels', error);
+    const message = String(error.message || error);
+    if (/failed to fetch|networkerror|connection|timeout|522|cloudflare/i.test(message)) {
+      throw new Error('Supabase er midlertidig utilgjengelig. Olivia beholder eksisterende visning og prøver igjen når tjenesten er tilbake.');
+    }
+    return [];
+  }
   return (data ?? []).map(rowToParcel);
 }
 
