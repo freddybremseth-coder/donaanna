@@ -134,6 +134,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile>(OLIVIA_FALLBACK_USER);
   const [parcels, setParcels] = useState<Parcel[]>(EMPTY_OLIVIA_PARCELS);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
+  const [dataSourceError, setDataSourceError] = useState('');
 
   const rememberPostLoginTab = (targetTab: string) => {
     postLoginTabRef.current = targetTab;
@@ -178,6 +179,7 @@ const App: React.FC = () => {
         if (!cancelled) {
           setParcels(rows);
           setSelectedParcel(rows[0] ?? null);
+          setDataSourceError('');
         }
 
         const { migrated, skipped } = await migrateLocalStorageToSupabase();
@@ -185,7 +187,12 @@ const App: React.FC = () => {
           console.info('[migration] uploaded to Supabase', migrated);
         }
       })
-      .catch(err => console.warn('[migration] failed', err));
+      .catch(err => {
+        console.warn('[olivia] Supabase data load failed', err);
+        if (!cancelled) {
+          setDataSourceError(err instanceof Error ? err.message : 'Supabase er midlertidig utilgjengelig.');
+        }
+      });
 
     return () => { cancelled = true; };
   }, [isAuthReady, isLoggedIn, showPublicSite, portalMode, user.role, user.email]);
@@ -481,6 +488,12 @@ const App: React.FC = () => {
         portalMode={b2bPortalIsActive ? 'b2b' : 'olivia'}
         canSwitchToOlivia={!isB2BOnlyUser(user.role, user.email)}
       >
+        {dataSourceError && (
+          <div className="mb-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+            <strong>Supabase er midlertidig utilgjengelig.</strong>
+            <span className="ml-2">{dataSourceError}</span>
+          </div>
+        )}
         <Suspense fallback={<div className="p-8 text-slate-400">Laster modul...</div>}>
           {renderContent()}
         </Suspense>

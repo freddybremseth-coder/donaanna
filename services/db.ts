@@ -52,7 +52,7 @@ function throwDbError(label: string, error: PostgrestError | { message: string; 
     throw new Error(`Innloggingen er utløpt — last inn siden på nytt og logg inn igjen.`);
   }
   if (/failed to fetch|networkerror/i.test(msg)) {
-    throw new Error(`Mistet kontakt med Supabase. Sjekk internett og prøv igjen.`);
+    throw new Error(`Supabase er midlertidig utilgjengelig. Prøv igjen om litt. Ingen data er slettet.`);
   }
   // Fallback: raw Supabase message (still helpful in DevTools)
   throw new Error(`Lagring feilet: ${msg || 'ukjent feil fra Supabase'}`);
@@ -65,7 +65,14 @@ export async function fetchParcels(): Promise<Parcel[]> {
     .from('parcels')
     .select('*')
     .order('created_at', { ascending: true });
-  if (error) { console.error('fetchParcels', error); return []; }
+  if (error) {
+    console.error('fetchParcels', error);
+    const message = String(error.message || error);
+    if (/failed to fetch|networkerror|connection|timeout|522|cloudflare/i.test(message)) {
+      throw new Error('Supabase er midlertidig utilgjengelig. Olivia beholder eksisterende visning og prøver igjen når tjenesten er tilbake.');
+    }
+    return [];
+  }
   return (data ?? []).map(rowToParcel);
 }
 
