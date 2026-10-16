@@ -27,7 +27,9 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
   const { t } = useTranslation(language);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const isB2BPortal = portalMode === 'b2b';
+  // Farm screens must never inherit the B2B navigation on mobile (or desktop).
+  // The active screen is authoritative when a portal-mode transition is pending.
+  const isB2BPortal = portalMode === 'b2b' && (activeTab === 'commerce' || activeTab === 'settings');
 
   const farmMenuItems: MenuItem[] = [
     { id: 'dashboard', icon: LayoutDashboard, label: t('dashboard') },
