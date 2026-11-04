@@ -4,7 +4,13 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './tailwind.css';
 
+function analyticsAllowed(): boolean {
+  try { return JSON.parse(localStorage.getItem('donaanna:cookie-consent:v1') || 'null')?.analytics === true; }
+  catch { return false; }
+}
+
 function trackSearchDiscovery() {
+  if (!analyticsAllowed()) return;
   const privatePaths = ['/app', '/olivia', '/b2b'];
   if (privatePaths.some(path => window.location.pathname === path || window.location.pathname.startsWith(path + '/'))) return;
 
@@ -39,6 +45,7 @@ function trackSearchDiscovery() {
 }
 
 trackSearchDiscovery();
+window.addEventListener('donaanna:cookie-consent-changed', trackSearchDiscovery);
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
