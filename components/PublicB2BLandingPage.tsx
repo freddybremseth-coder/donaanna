@@ -28,7 +28,7 @@ interface LandingPageProps {
 }
 
 const copy = {
-  eyebrow: 'Estate-olje fra Biar · Alicante · Freddy Bremseth',
+  eyebrow: 'Fra olivenlundene i Biar · Alicante · Anna og Freddy',
   headline: 'Doña Anna – tidlig høstet olivenolje fra Biar.',
   subhead: 'Tidlig høstet olivenolje og bordoliven fra våre lunder i Biar. Skapt for kjøkken som verdsetter smak, opprinnelse, sporbarhet og en historie gjestene kan kjenne igjen ved bordet.',
   cta: 'Be om smaksprøve',
@@ -254,6 +254,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   const navLinks = [
     ['Gården', '#estate'],
     ['Produkter', '#portfolio'],
+    ['Historien', '#story'],
+    ['Gaver', '#gifts'],
     ['Kunnskap', '#knowledge'],
     ['Magasin', '/magasin'],
     ['For profesjonelle', '#b2b'],
@@ -356,7 +358,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Kort fortalt</p>
                 <h2 id="quick-answers-title" className="mt-3 font-serif text-3xl leading-tight md:text-5xl">Hva er Doña Anna?</h2>
                 <p className="mt-4 max-w-xl text-lg leading-8 text-white/64">
-                  Doña Anna er et olivenprosjekt i Biar, Alicante, utviklet av Freddy Bremseth. Fokus er tidlig høstet extra virgin olivenolje, bordoliven, sporbarhet og produkter for både matinteresserte og profesjonelle kjøkken.
+                  Doña Anna er olivenprosjektet til Anna og Freddy Bremseth i Biar, Alicante. Fokus er tidlig høstet extra virgin olivenolje, bordoliven, sporbarhet og produkter for både matinteresserte og profesjonelle kjøkken.
                 </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -374,7 +376,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 </article>
                 <article className="border border-white/10 bg-white/[0.035] p-5">
                   <h3 className="font-serif text-2xl">Hvem står bak?</h3>
-                  <p className="mt-3 leading-7 text-white/62">Freddy Bremseth utvikler Doña Anna som del av sin prosjektportefølje i Spania. <a className="text-[#d4af37] underline-offset-4 hover:underline" href="https://www.freddybremseth.com/olivenolje-og-dona-anna.html">Les historien bak prosjektet</a>.</p>
+                  <p className="mt-3 leading-7 text-white/62">Anna og Freddy Bremseth står bak Doña Anna og arbeidet med gården, produktene og historien fra Biar. <a className="text-[#d4af37] underline-offset-4 hover:underline" href="https://www.freddybremseth.com/olivenolje-og-dona-anna.html">Les historien bak prosjektet</a>.</p>
                 </article>
               </div>
             </div>
@@ -478,6 +480,50 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   </div>
                 </article>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="story" aria-labelledby="story-title" className="border-y border-white/10 bg-[#171711] px-5 py-20 md:px-8">
+          <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[0.95fr_1.05fr]">
+            <div className="overflow-hidden border border-white/10 bg-[#0c0c0c]">
+              <img src="/donaanna/olive-trees.jpg" alt="Olivenlundene som danner bakteppet for Doña Anna i Biar" className="h-80 w-full object-cover lg:h-[31rem]" loading="lazy" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#d4af37]">Menneskene · stedet · smaken</p>
+              <h2 id="story-title" className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Fra vår gård i Biar. Til ditt bord.</h2>
+              <p className="mt-6 text-lg leading-8 text-white/72">Doña Anna er Anna og Freddys olivenprosjekt i Alicante-provinsens innland. Her ønsker vi å la stedet, trærne og menneskene bak oljen få en like tydelig stemme som selve smaken.</p>
+              <p className="mt-4 leading-8 text-white/62">En vakker flaske kan vekke interessen. Tillit skapes av det som finnes bak etiketten: dokumentert opprinnelse, ærlig produktinformasjon og historien om arbeidet fra sesong til sesong. Hver produktvariant skal ha sin egen identitet uten at vi mister det felles uttrykket Doña Anna.</p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <a href="#people" className="inline-flex h-12 items-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.18em] text-black transition hover:bg-white">Møt menneskene bak <ArrowRight size={16} /></a>
+                <a href="/olivenolje-fra-biar" className="inline-flex h-12 items-center gap-2 border border-white/20 px-6 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:border-[#d4af37]">Oppdag opprinnelsen</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="gifts" aria-labelledby="gifts-title" className="bg-[#f8f5ea] px-5 py-20 text-black md:px-8">
+          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.9fr_1.1fr]">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#8a6a19]">Gaver og smaksopplevelser</p>
+              <h2 id="gifts-title" className="mt-4 font-serif text-4xl leading-tight md:text-6xl">En gave med en historie.</h2>
+              <p className="mt-6 text-lg leading-8 text-black/70">Utforsk mulighetene for smakssett, gaveesker og små, personlige bedriftsgaver fra Doña Anna. Vi utvikler konseptene med utgangspunkt i faktisk tilgjengelige produkter og dokumenterte batcher.</p>
+              <p className="mt-4 leading-7 text-black/60">Gaveformatene er under utvikling. Ta kontakt for å melde interesse – dette er ikke en bekreftelse på lagerstatus, pris eller leveringsdato.</p>
+              <a href="mailto:info@donaanna.com?subject=Interesse%20for%20gaveesker%20og%20smakssett%20Do%C3%B1a%20Anna" className="mt-7 inline-flex h-12 items-center gap-2 bg-black px-6 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:bg-[#705515]">Meld interesse <ArrowRight size={16} /></a>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <article className="border border-black/10 bg-white p-7">
+                <Package size={27} className="text-[#8a6a19]" />
+                <h3 className="mt-6 font-serif text-3xl">Smakssett</h3>
+                <p className="mt-4 leading-7 text-black/65">Et mulig utvalg av ulike Doña Anna-oljer, med kort veiledning om smak, bruk og opprinnelse.</p>
+                <p className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-[#8a6a19]">Konsept under utvikling</p>
+              </article>
+              <article className="border border-black/10 bg-white p-7">
+                <Sparkles size={27} className="text-[#8a6a19]" />
+                <h3 className="mt-6 font-serif text-3xl">Personlige gaver</h3>
+                <p className="mt-4 leading-7 text-black/65">Gavepresentasjon for matinteresserte, vertskap og virksomheter som vil gi noe med tydelig opphav.</p>
+                <p className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-[#8a6a19]">Forespørsel, ikke nettbutikk</p>
+              </article>
             </div>
           </div>
         </section>
@@ -738,11 +784,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[0.78fr_1.22fr]">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Bak Doña Anna</p>
-              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Et olivenprosjekt bygget fra Biar – med Freddy Bremseth som initiativtaker.</h2>
+              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Fra vår olivenlund i Biar – et personlig prosjekt for Anna og Freddy.</h2>
             </div>
             <div className="self-end">
               <p className="text-lg leading-8 text-white/66">
-                Freddy Bremseth arbeider med eiendom, teknologi, forfatterskap og egne prosjekter i Spania. Doña Anna er den delen av porteføljen som handler om oliven, jord, matkultur, produktutvikling og en langsiktig merkevare med røtter i Biar.
+                For Anna og Freddy handler Doña Anna om mer enn olivenolje: det er arbeidet med jorden, trærne og en personlig merkevare med røtter i Biar. Vi vil gjøre gårdens historie synlig – fra lunden og innhøstingen til flasken på bordet. Opplysninger om sort, smak og kvalitet dokumenteres for hver publiserte batch.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <a href="https://www.freddybremseth.com/" className="inline-flex h-11 items-center justify-center border border-white/16 px-5 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:border-[#d4af37]">Freddy Bremseth</a>
