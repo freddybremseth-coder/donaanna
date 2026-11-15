@@ -34,11 +34,17 @@ function field(value: unknown, max = 254): string {
 }
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
-  if (req.method !== 'POST') return send(res, 405, 'method_not_allowed');
   const enabled = process.env.DONAANNA_PUBLIC_INQUIRY_ENABLED === 'true';
   const shared = process.env.DONAANNA_INQUIRY_SHARED_SECRET;
   const pepper = process.env.DONAANNA_INQUIRY_HMAC_SECRET;
-  if (!enabled || !shared || !pepper || pepper.length < 32) return send(res, 503, 'not_configured');
+  const configured = enabled && Boolean(shared && pepper && pepper.length >= 32);
+  if (req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ enabled: configured }));
+    return;
+  }
+  if (req.method !== 'POST') return send(res, 405, 'method_not_allowed');
+  if (!configured) return send(res, 503, 'not_configured');
   if (!/^application\/json(?:\s*;|\s*$)/i.test(String(req.headers['content-type'] ?? ''))) return send(res, 415, 'invalid_content_type');
   if (Number(req.headers['content-length'] || 0) > MAX_BYTES) return send(res, 413, 'too_large');
 
