@@ -221,7 +221,9 @@ const formatNumber = (value: number) => new Intl.NumberFormat('no-NO').format(va
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegister }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [livePortfolio, setLivePortfolio] = useState<PublicCommerceProduct[]>([]);
-  const [tastingRequest, setTastingRequest] = useState({ company: '', role: '', email: '', address: '' });
+  const [tastingRequest, setTastingRequest] = useState({ company: '', name: '', role: '', email: '', address: '', product: 'Verde Vivo' });
+  const [sendingTasting, setSendingTasting] = useState(false);
+  const [tastingNotice, setTastingNotice] = useState<'sent' | 'unavailable' | null>(null);
   const [signal, setSignal] = useState<PublicEstateSignal>({
     isLive: false,
     parcelCount: 2,
@@ -238,17 +240,32 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
   const portfolioItems = livePortfolio.length ? livePortfolio : portfolio;
 
-  const handleTastingRequest = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleTastingRequest = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const subject = 'Forespørsel om smaksprøve – Doña Anna';
-    const body = [
-      `Restaurant / virksomhet: ${tastingRequest.company}`,
-      `Rolle: ${tastingRequest.role}`,
-      `E-post: ${tastingRequest.email}`,
-      `Leveringsadresse: ${tastingRequest.address}`,
-    ].join('\n');
-
-    window.location.href = `mailto:info@donaanna.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    if (sendingTasting) return;
+    setSendingTasting(true);
+    setTastingNotice(null);
+    const search = new URLSearchParams(window.location.search);
+    const utmContent = search.get('utm_content') || '';
+    const utmSource = search.get('utm_source') || '';
+    try {
+      const result = await fetch('/api/inquiry', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ...tastingRequest, utmContent, utmSource }),
+      });
+      const response = await result.json().catch(() => null);
+      if (result.ok && response?.accepted === true) {
+        setTastingNotice('sent');
+        setTastingRequest({ company: '', name: '', role: '', email: '', address: '', product: 'Verde Vivo' });
+      } else {
+        setTastingNotice('unavailable');
+      }
+    } catch {
+      setTastingNotice('unavailable');
+    } finally {
+      setSendingTasting(false);
+    }
   };
 
   const navLinks = [
@@ -773,15 +790,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             <form className="border border-black/12 bg-white p-5 shadow-2xl shadow-black/10" onSubmit={handleTastingRequest}>
               <label htmlFor="tasting-company" className="block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Restaurant / virksomhet</label>
               <input id="tasting-company" required value={tastingRequest.company} onChange={(event) => setTastingRequest({ ...tastingRequest, company: event.target.value })} className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
+              <label htmlFor="tasting-name" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Kontaktperson</label>
+              <input id="tasting-name" required value={tastingRequest.name} onChange={(event) => setTastingRequest({ ...tastingRequest, name: event.target.value })} className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
+              <label htmlFor="tasting-product" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Produktinteresse</label>
+              <select id="tasting-product" value={tastingRequest.product} onChange={(event) => setTastingRequest({ ...tastingRequest, product: event.target.value })} className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]">
+                {['Verde Vivo', 'Verde Alto', 'Raíz Antigua', 'Cocina Viva'].map(product => <option key={product}>{product}</option>)}
+              </select>
               <label htmlFor="tasting-role" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Rolle</label>
               <input id="tasting-role" required value={tastingRequest.role} onChange={(event) => setTastingRequest({ ...tastingRequest, role: event.target.value })} placeholder="Kokk, innkjøper eller distributør" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
               <label htmlFor="tasting-email" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">E-post</label>
               <input id="tasting-email" required value={tastingRequest.email} onChange={(event) => setTastingRequest({ ...tastingRequest, email: event.target.value })} type="email" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
               <label htmlFor="tasting-address" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Leveringsadresse</label>
               <textarea id="tasting-address" required value={tastingRequest.address} onChange={(event) => setTastingRequest({ ...tastingRequest, address: event.target.value })} className="mt-2 h-24 w-full border border-black/12 p-3 outline-none focus:border-[#d4af37]" />
-              <p className="mt-4 text-sm leading-6 text-black/60">Forespørselen åpner en e-post til Doña Anna med opplysningene dine. Vi svarer med tilgjengelighet, pris og levering.</p>
-              <button className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-black px-5 text-xs font-bold uppercase tracking-[0.2em] text-white">
-                Send forespørsel <ArrowRight size={17} />
+              <p className="mt-4 text-sm leading-6 text-black/60">Vi bruker opplysningene kun til å behandle forespørselen. Hvis du kom fra et innlegg kan kilden brukes til å forstå hvilke temaer som skaper interesse, uten å lagre navn og e-post i markedsføringsmålingene.</p>
+              {tastingNotice === 'sent' && <p role="status" className="mt-4 text-sm font-semibold text-green-800">Forespørselen er sendt. Vi følger opp på e-post.</p>}
+              {tastingNotice === 'unavailable' && <p role="alert" className="mt-4 text-sm font-semibold text-red-800">Forespørselen ble ikke bekreftet sendt. Du kan i stedet kontakte oss på <a className="underline" href="mailto:info@donaanna.com">info@donaanna.com</a>. Ikke send på nytt før du har kontrollert e-posten din.</p>}
+              <button disabled={sendingTasting} className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-black px-5 text-xs font-bold uppercase tracking-[0.2em] text-white disabled:opacity-50">
+                {sendingTasting ? 'Sender …' : 'Send forespørsel'} <ArrowRight size={17} />
               </button>
             </form>
           </div>
