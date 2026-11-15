@@ -223,7 +223,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   const [livePortfolio, setLivePortfolio] = useState<PublicCommerceProduct[]>([]);
   const [tastingRequest, setTastingRequest] = useState({ company: '', name: '', role: '', email: '', address: '', product: 'Verde Vivo' });
   const [sendingTasting, setSendingTasting] = useState(false);
-  const [tastingNotice, setTastingNotice] = useState<'sent' | 'unavailable' | null>(null);
+  const [tastingNotice, setTastingNotice] = useState<'sent' | 'unavailable' | 'email_client' | null>(null);
   const [signal, setSignal] = useState<PublicEstateSignal>({
     isLive: false,
     parcelCount: 2,
@@ -249,6 +249,24 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     const utmContent = search.get('utm_content') || '';
     const utmSource = search.get('utm_source') || '';
     try {
+      // Retain the existing mailto journey until the private, rate-limited
+      // delivery service is explicitly activated and verified end-to-end.
+      const availability = await fetch('/api/inquiry', { method: 'GET' });
+      const mode = await availability.json().catch(() => null);
+      if (!availability.ok || mode?.enabled !== true) {
+        const subject = 'Forespørsel om smaksprøve – Doña Anna';
+        const body = [
+          `Restaurant / virksomhet: ${tastingRequest.company}`,
+          `Kontaktperson: ${tastingRequest.name}`,
+          `Rolle: ${tastingRequest.role}`,
+          `Produkt: ${tastingRequest.product}`,
+          `E-post: ${tastingRequest.email}`,
+          `Leveringsadresse: ${tastingRequest.address}`,
+        ].join('\\n');
+        setTastingNotice('email_client');
+        window.location.href = `mailto:info@donaanna.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        return;
+      }
       const result = await fetch('/api/inquiry', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -803,6 +821,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <label htmlFor="tasting-address" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Leveringsadresse</label>
               <textarea id="tasting-address" required value={tastingRequest.address} onChange={(event) => setTastingRequest({ ...tastingRequest, address: event.target.value })} className="mt-2 h-24 w-full border border-black/12 p-3 outline-none focus:border-[#d4af37]" />
               <p className="mt-4 text-sm leading-6 text-black/60">Vi bruker opplysningene kun til å behandle forespørselen. Hvis du kom fra et innlegg kan kilden brukes til å forstå hvilke temaer som skaper interesse, uten å lagre navn og e-post i markedsføringsmålingene.</p>
+              {tastingNotice === 'email_client' && <p role="status" className="mt-4 text-sm font-semibold text-black/70">E-postprogrammet er åpnet. Forespørselen er ikke sendt før du trykker Send der.</p>}
               {tastingNotice === 'sent' && <p role="status" className="mt-4 text-sm font-semibold text-green-800">Forespørselen er sendt. Vi følger opp på e-post.</p>}
               {tastingNotice === 'unavailable' && <p role="alert" className="mt-4 text-sm font-semibold text-red-800">Forespørselen ble ikke bekreftet sendt. Du kan i stedet kontakte oss på <a className="underline" href="mailto:info@donaanna.com">info@donaanna.com</a>. Ikke send på nytt før du har kontrollert e-posten din.</p>}
               <button disabled={sendingTasting} className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-black px-5 text-xs font-bold uppercase tracking-[0.2em] text-white disabled:opacity-50">
