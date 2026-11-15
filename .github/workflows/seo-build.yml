@@ -22,7 +22,7 @@ jobs:
         run: npm run build
       - name: Compile SEO serverless handlers
         run: |
-          npx esbuild api/public-article.ts api/public-listing.ts api/public-evergreen.ts api/sitemap.ts api/realtyflow/publish.ts \
+          npx esbuild api/public-article.ts api/public-listing.ts api/public-evergreen.ts api/sitemap.ts api/realtyflow/publish.ts api/inquiry.ts \
             --outdir=/tmp/donaanna-api-check \
             --bundle --platform=node --format=esm --external:@supabase/supabase-js
       - name: Validate public SEO, AEO, GEO and entity network
